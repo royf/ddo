@@ -38,6 +38,13 @@ class AbstractEnv(object):
     def play(self, action):
         raise NotImplemented("Must implement a play command")
 
+    """
+    This function determins the possible actions at a state s, if none provided use 
+    current state
+    """
+    def possibleActions(self, s=None):
+        raise NotImplemented("Must implement a play command")
+
 
     """
     This function rolls out a policy which is a map from state to action

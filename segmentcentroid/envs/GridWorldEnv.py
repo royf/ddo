@@ -46,7 +46,9 @@ class GridWorldEnv(AbstractEnv):
         return False
 
 
-    #helper method returns the possible actions
+    """
+    Determines the possible actions at a state
+    """
     def possibleActions(self, s=None):
         if s is None:
             s = self.state
