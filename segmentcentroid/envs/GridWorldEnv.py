@@ -1,5 +1,5 @@
 
-from AbstractEnvironment import *
+from AbstractEnv import *
 import numpy as np
 import copy
 
@@ -8,7 +8,7 @@ This class defines an abstract environment,
 all environments derive from this class
 """
 
-class GridWorldEnv(AbstractEnvironment):
+class GridWorldEnv(AbstractEnv):
 
 
     ##All of the constant variables
@@ -86,9 +86,17 @@ class GridWorldEnv(AbstractEnvironment):
     """
     This function takes an action
     """
-    def play(self, action):
+    def play(self, a):
+
+
+        #throws an error if you are stupid
+        if a not in self.possibleActions():
+            raise ValueError("Invalid Action!!")
+
+        #copies states to make sure no concurrency issues
         r = self.STEP_REWARD
         ns = self.state.copy()
+
         if np.random.rand(1,1) < self.NOISE:
             # Random Move
             a = np.random.choice(self.possibleActions())
@@ -112,8 +120,8 @@ class GridWorldEnv(AbstractEnvironment):
             r = self.PIT_REWARD
 
         self.state = ns
-        self.time = time + 1
-        self.reward = reward + r
+        self.time = self.time + 1
+        self.reward = self.reward + r
         self.termination = self.isTerminal()
 
 

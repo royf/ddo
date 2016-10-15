@@ -3,7 +3,7 @@ This class defines an abstract environment,
 all environments derive from this class
 """
 
-class AbstractEnvironment(object):
+class AbstractEnv(object):
 
     def __init__(self):
 
@@ -11,7 +11,7 @@ class AbstractEnvironment(object):
 
         self.state = None
 
-        self.terminated = False
+        self.termination= False
 
         self.time = 0
 
