@@ -21,7 +21,7 @@ class AbstractEnvironment(object):
     """
     This function initializes the envioronment
     """
-    def init(self, state=None):
+    def init(self, state=None, time=0, reward=0):
         raise NotImplemented("Must implement an init command")
 
 
