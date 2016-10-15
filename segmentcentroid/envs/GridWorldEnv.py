@@ -1,5 +1,7 @@
 
 from AbstractEnvironment import *
+import numpy as np
+import copy
 
 """
 This class defines an abstract environment,
