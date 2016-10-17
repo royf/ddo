@@ -2,14 +2,12 @@
 
 from segmentcentroid.envs.GridWorldEnv import GridWorldEnv
 from segmentcentroid.planner.mcts import MCTS
-from segmentcentroid.models.SoftMaxLogit import SoftMaxLogit
+from segmentcentroid.models.LogitModel import LogitModel
 
 from segmentcentroid.inference.seginference import SegCentroidInferenceDiscrete
 
 import numpy as np
 
-import theano
-import theano.tensor as T
 
 
 ##Example 1##
@@ -31,8 +29,13 @@ b = m.plan(5, start=np.array([2, 2]))
 
 print a,b
 
+l = LogitModel(2,4)
+
+print l.theta
+#print l.eval(np.matrix([1,1]).T)
 
 
-#s = SegCentroidInferenceDiscrete(SoftMaxLogit, 4)
-#s.fit([a, b],2,4)
+
+s = SegCentroidInferenceDiscrete(LogitModel, 4)
+s.fit([a, b],2,4)
 

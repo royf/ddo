@@ -2,10 +2,6 @@
 import numpy as np
 import copy
 
-import theano
-import theano.tensor as T
-from theano import function
-
 """
 This class defines the main inference logic
 """
@@ -18,11 +14,10 @@ class SegCentroidInferenceDiscrete(object):
 
 
     #X is a list of segmented trajectories
-    def fit(self, X, statedims, actionsize, max_iters=1, learning_rate=0.01):
+    def fit(self, X, statedims, actiondims, max_iters=1, learning_rate=0.01):
         
         #create k initial policies
-        x = T.matrix('x') 
-        policies = [copy.copy(self.policy_class(x, statedims* 1, actionsize)) for i in range(0,self.k)]
+        policies = [copy.copy(self.policy_class(statedims, actiondims)) for i in range(0,self.k)]
 
 
         #initialize q and P for iterations
@@ -37,30 +32,7 @@ class SegCentroidInferenceDiscrete(object):
 
             q, P = self._updateQP(X, policies, q, P)
 
-            y = T.ivector('y')
-
-            for seg in range(0,self.k):
-
-                for plan in range(0, m):
-
-                    batch = 0
-
-                    #to fix here...
-                    for t in range(0, len(X[plan])):
-
-                        cost = policies[seg].log_likelihood(y)
-
-                        action = X[plan][t][1]
-
-                        lvector = np.squeeze(np.zeros((self.k,1)))
-                        lvector[action] = 1 - 1e-6
-
-                        obs = np.matrix(X[plan][t][0])
-
-                        g_W = function( ,T.grad(cost=cost, wrt=policies[seg].W), allow_input_downcast=True)
-                        #print obs.shape, lvector.shape
-                        theano.function( inputs=[x,y], outputs=cost, updates=updates)
-                        policies[seg].W = policies[seg].W + learning_rate*g_W(obs, lvector)
+            print q,P
 
 
 
