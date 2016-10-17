@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+from AbstractPlanner import *
 
 """
 This module implements Monte Carlo Tree Search
@@ -38,7 +39,9 @@ class MCTSTree(object):
 		result = []
 		cur_tree = self
 		while cur_tree.children != []:
-			result.append(cur_tree.state_action)
+			if cur_tree.state_action != None:
+				result.append(cur_tree.state_action)
+
 			best = np.argmax([c.reward for c in cur_tree.children])
 			cur_tree = cur_tree.children[best]
 
@@ -48,21 +51,22 @@ class MCTSTree(object):
 """
 This class performs the tree search
 """
-class MCTS(object):
+class MCTS(AbstractPlanner):
 
 	#have to pass in an abstractenv descendent
 	def __init__(self, domain, 
 					   playout_iters=10):
 
-		self.domain = domain
-		self.tree = MCTSTree()
 		self.playout_iters = playout_iters
+
+		super(MCTS, self).__init__(domain)
 
 	"""
 	Given a max depth and a start state, the 
 	planner returns a trajectory
 	"""
 	def plan(self, max_depth, start=None):
+		self.tree = MCTSTree()
 		domaincopy = copy.copy(self.domain)
 		domaincopy.init(start)
 		state, time, reward, term = domaincopy.getState() 
