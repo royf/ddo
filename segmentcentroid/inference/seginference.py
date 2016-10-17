@@ -14,7 +14,7 @@ class SegCentroidInferenceDiscrete(object):
 
 
     #X is a list of segmented trajectories
-    def fit(self, X, statedims, actiondims, max_iters=1, learning_rate=0.01):
+    def fit(self, X, statedims, actiondims, max_iters=100, learning_rate=0.01):
         
         #create k initial policies
         policies = [copy.copy(self.policy_class(statedims, actiondims)) for i in range(0,self.k)]
@@ -24,21 +24,58 @@ class SegCentroidInferenceDiscrete(object):
         q = np.matrix(np.ones((len(X),self.k)))/self.k
         P = np.matrix(np.ones((self.k,1)))/self.k
 
-        m = len(X)
-
-
+        
         #Outer Loop For Gradient Descent
         for it in range(0, max_iters):
 
             q, P = self._updateQP(X, policies, q, P)
 
-            print q,P
+            for seg in range(0, self.k):
+                policies[seg].descent(self._batchGrad(X, policies[0],0, q), learning_rate)
 
+        return q, P, policies
 
-
+            
     """
     Defines the inner loops
     """
+
+    def _batchGrad(self, X, policy, policy_index, q):
+
+        gradSum = None
+
+        m = len(X)
+
+        for plan in range(0, m):
+
+            traj = X[plan]
+
+            pointGrad = q[plan, policy_index]*self._trajLogDeriv(traj, policy)
+
+            if gradSum == None:
+                gradSum = pointGrad
+            else:
+                gradSum = gradSum + pointGrad
+
+        return gradSum*1.0/m
+
+
+
+    def _trajLogDeriv(self, traj, policy):
+        gradSum = None
+
+        for t in range(0, len(traj)):
+            obs = np.matrix(traj[t][0])
+            action = traj[t][1]
+            deriv = policy.log_deriv(obs, action)
+
+            if gradSum == None:
+                gradSum = deriv
+            else:
+                gradSum = gradSum + deriv
+
+        return gradSum
+
 
     def _updateQP(self, X, policies, q, P):
 

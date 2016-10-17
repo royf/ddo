@@ -18,3 +18,7 @@ class AbstractModel(object):
     #return the log derivative log \nabla_\theta \pi(s)
     def log_deriv(self, s):
         raise NotImplemented("Must implement an eval function")
+
+
+    def descent(self, grad_theta, learning_rate):
+        raise NotImplemented("Must implement a descent step")

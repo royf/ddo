@@ -37,5 +37,5 @@ print l.theta
 
 
 s = SegCentroidInferenceDiscrete(LogitModel, 4)
-s.fit([a, b],2,4)
+print s.fit([a, b],2,4)
 

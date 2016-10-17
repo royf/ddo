@@ -27,5 +27,17 @@ class LogitModel(AbstractModel):
 
     #return the log derivative log \nabla_\theta \pi(s)
     def log_deriv(self, s, a):
-        
-        self.eval(s)
+        linproj = np.dot(self.theta.T, s.T)
+        gradient = np.zeros((self.statedim, self.actiondim))
+
+        for i in range(0, self.actiondim):
+            
+            if a == i:
+                gradient[:,i] = s - linproj[i]
+            else:
+                gradient[:,i] = - linproj[i]
+
+        return gradient
+
+    def descent(self, grad_theta, learning_rate):
+        self.theta = self.theta + learning_rate*grad_theta
