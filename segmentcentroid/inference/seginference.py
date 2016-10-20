@@ -31,7 +31,7 @@ class SegCentroidInferenceDiscrete(object):
             q, P = self._updateQP(X, policies, q, P)
 
             for seg in range(0, self.k):
-                policies[seg].descent(self._batchGrad(X, policies[0],0, q), learning_rate)
+                policies[seg].descent(self._batchGrad(X, policies[seg],seg, q), learning_rate)
 
         return q, P, policies
 
@@ -89,10 +89,13 @@ class SegCentroidInferenceDiscrete(object):
             for seg in range(0, self.k):
 
                 q[plan, seg] = P[seg]*self._segLikelihood(X[plan], policies[seg])
+
+            #print q[plan, :], plan, P[seg]
       
         normalization = np.matrix(np.sum(q, axis=1))
         normalization_matrix = np.tile(1/normalization, [1,self.k])
         q = np.multiply(q, normalization_matrix)
+        print q
         P = np.matrix(np.sum(q, axis=0)).T/m
             
         return q,P
