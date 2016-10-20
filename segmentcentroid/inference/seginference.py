@@ -28,6 +28,8 @@ class SegCentroidInferenceDiscrete(object):
         #Outer Loop For Gradient Descent
         for it in range(0, max_iters):
 
+            print "Iteration", it, q, P
+
             q, P = self._updateQP(X, policies, q, P)
 
             for seg in range(0, self.k):
@@ -82,6 +84,9 @@ class SegCentroidInferenceDiscrete(object):
         #how many trajectories are there in X
         m = len(X)
 
+        qorig = copy.copy(q)
+        Porig = copy.copy(P)
+
         #for each trajectory
         for plan in range(0, m):
 
@@ -93,10 +98,16 @@ class SegCentroidInferenceDiscrete(object):
             #print q[plan, :], plan, P[seg]
       
         normalization = np.matrix(np.sum(q, axis=1))
+
         normalization_matrix = np.tile(1/normalization, [1,self.k])
         q = np.multiply(q, normalization_matrix)
-        print q
         P = np.matrix(np.sum(q, axis=0)).T/m
+
+
+        #test if nan
+        if np.product(1-np.isnan(q)) == 0:
+            return qorig, Porig
+
             
         return q,P
 
