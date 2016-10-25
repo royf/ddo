@@ -42,5 +42,5 @@ b = [(np.array([0,3]), 0), (np.array([1,3]), 0), (np.array([2,3]), 0), (np.array
 
 
 s = SegCentroidInferenceDiscrete(LogitModel, 2)
-print s.fit([a, b],2,4)
+print(s.fit([a, b],2,4))
 

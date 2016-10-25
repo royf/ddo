@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import copy
-from AbstractPlanner import *
+from .AbstractPlanner import *
 
 """
 This module implements Monte Carlo Tree Search
@@ -31,7 +31,7 @@ class MCTSTree(object):
 	def treePrint(self):
 		cur_tree = self
 		while cur_tree.children != []:
-			print cur_tree.state_action, cur_tree.reward
+			print(cur_tree.state_action, cur_tree.reward)
 			best = np.argmax([c.reward for c in cur_tree.children])
 			cur_tree = cur_tree.children[best]
 

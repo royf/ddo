@@ -28,7 +28,7 @@ class SegCentroidInferenceDiscrete(object):
         #Outer Loop For Gradient Descent
         for it in range(0, max_iters):
 
-            print "Iteration", it, q, P
+            print("Iteration", it, q, P)
 
             q, P = self._updateQP(X, policies, q, P)
 
@@ -54,7 +54,7 @@ class SegCentroidInferenceDiscrete(object):
 
             pointGrad = q[plan, policy_index]*self._trajLogDeriv(traj, policy)
 
-            if gradSum == None:
+            if gradSum is None:
                 gradSum = pointGrad
             else:
                 gradSum = gradSum + pointGrad
@@ -71,7 +71,7 @@ class SegCentroidInferenceDiscrete(object):
             action = traj[t][1]
             deriv = policy.log_deriv(obs, action)
 
-            if gradSum == None:
+            if gradSum is None:
                 gradSum = deriv
             else:
                 gradSum = gradSum + deriv

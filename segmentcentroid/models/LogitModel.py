@@ -1,5 +1,5 @@
 
-from AbstractModel import AbstractModel
+from .AbstractModel import AbstractModel
 import numpy as np
 import scipy.special
 

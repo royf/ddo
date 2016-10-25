@@ -1,5 +1,5 @@
 
-from AbstractEnv import *
+from .AbstractEnv import *
 import numpy as np
 import copy
 
