@@ -12,7 +12,7 @@ class LogitModel(AbstractModel):
 
     def __init__(self,statedim, actiondim, unnormalized=False):
       
-        self.theta = np.random.rand(statedim, actiondim)
+        self.theta = 10*np.random.rand(statedim, actiondim)
 
         super(LogitModel, self).__init__(statedim, actiondim, discrete=True, unnormalized=unnormalized)
 

@@ -35,25 +35,26 @@ segments = []
 
 traj = v.plan(max_depth=100)
 
-segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
+segments.extend(waypoint_segment(traj, [(5,2),  (5,7) ]))
 
 traj = v.plan(max_depth=100)
 
-segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
+segments.extend(waypoint_segment(traj, [(5,2), (5,7) ]))
 
 traj = v.plan(max_depth=100)
 
-segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
+segments.extend(waypoint_segment(traj, [(5,2), (5,7) ]))
 
 traj = v.plan(max_depth=100)
 
-segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
+segments.extend(waypoint_segment(traj, [(5,2), (5,7) ]))
 
 
 
 #We can fit the model with a logistic regression policy class
-s = SegCentroidInferenceDiscrete(LogitModel, 3)
+s = SegCentroidInferenceDiscrete(LogitModel, 2)
 q,p, policies = s.fit(segments,2,4)
+print(p)
 
 
 #Visualization Code

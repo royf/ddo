@@ -1,6 +1,7 @@
 
 import numpy as np
 import copy
+from sklearn.preprocessing import normalize
 
 """
 This class defines the main inference logic
@@ -14,7 +15,7 @@ class SegCentroidInferenceDiscrete(object):
 
 
     #X is a list of segmented trajectories
-    def fit(self, X, statedims, actiondims, max_iters=100, learning_rate=0.01):
+    def fit(self, X, statedims, actiondims, max_iters=100, learning_rate=0.001):
         
         #create k initial policies
         policies = [copy.copy(self.policy_class(statedims, actiondims)) for i in range(0,self.k)]
@@ -32,6 +33,7 @@ class SegCentroidInferenceDiscrete(object):
             #print(P)
 
             q, P = self._updateQP(X, policies, q, P)
+
 
             for seg in range(0, self.k):
                 policies[seg].descent(self._batchGrad(X, policies[seg],seg, q), learning_rate)
@@ -133,6 +135,8 @@ class SegCentroidInferenceDiscrete(object):
 
 
 
+
+
 class JointSegCentroidInferenceDiscrete(object):
 
     def __init__(self, policy_class, transition_class, k):
@@ -142,7 +146,7 @@ class JointSegCentroidInferenceDiscrete(object):
 
 
     #X is a trajectory
-    def fit(self, X, statedims, actiondims, max_iters=100, learning_rate=0.01):
+    def fit(self, X, statedims, actiondims, max_iters=10, learning_rate=0.01):
         
         #create k initial policies
         policies = [copy.copy(self.policy_class(statedims, actiondims, unnormalized=True)) for i in range(0,self.k)]
@@ -150,10 +154,79 @@ class JointSegCentroidInferenceDiscrete(object):
         #create k initial transitions
         transitions = [copy.copy(self.transition_class(statedims, 1, unnormalized=True)) for i in range(0,self.k)]
 
-        #hint transition matrix, defaulted to sequential
-        Ph = np.ones((self.k,self.k))/self.k 
+        #hint transition matrix, defaulted to sequential (bidiagonal)
+        Ph = np.tri(self.k,self.k, 1) - np.tri(self.k,self.k, -1)
+        Ph = normalize(Ph, axis=1, norm='l1')
+        q = np.matrix(np.ones((len(X),self.k)))/self.k
+        psi = np.matrix(np.ones((len(X),self.k)))/self.k
+       
+        #print(Ph)
+        #print(self._forward(20, 1, X, policies, transitions, Ph))
 
-        print(self._backward(20, 1, X, policies, transitions, Ph))
+        for it in range(0, max_iters):
+            q = self._updateQ(q, X, policies, transitions, Ph)
+            psi = self._updatePsi(psi, X, policies, transitions, Ph)
+
+            print("Iteration", it)
+
+            for seg in range(0, self.k):
+                policies[seg].descent(self._batchGrad(X, policies[seg],seg, q), learning_rate)
+                transitions[seg].descent(self._batchGrad(X, transitions[seg],seg, psi), learning_rate)
+
+        return q, psi, policies
+
+
+    def _updateQ(self, q, X, policies, transitions, Ph):
+        
+        newq = copy.copy(q)
+
+        for h in range(self.k):
+            for t in range(len(X)-1):
+                newq[t,h] = self._forward(t, h, X, policies, transitions, Ph)*\
+                            self._backward(t, h, X, policies, transitions, Ph)
+
+
+        newq = normalize(newq, axis=1, norm='l1')
+
+        return newq
+
+
+    def _updatePsi(self, psi, X, policies, transitions, Ph ):
+
+        newpsi = copy.copy(psi)
+
+        for t in range(len(X)-1):
+            for h in range(self.k):
+                
+                total = 0
+
+                for hp in range(self.k):
+                    total = total + \
+                            self._backwardTerm(t,h,X, policies, transitions, Ph)* \
+                            Ph[hp, h] * \
+                            self._forward(t, hp, X, policies, transitions, Ph)
+
+                    #print(self._backwardTerm(t,h,X, policies, transitions, Ph))
+
+                newpsi[t,h] = total
+
+        newpsi = normalize(newpsi, axis=1, norm='l1')
+
+        return newpsi
+
+
+    def _backwardTerm(self, t, h, X, policies, transitions, Ph):
+
+        s = X[t][0]
+        sp = X[t+1][0]
+        a = X[t][1]
+
+        #print(self._backward(t, h, X, policies, transitions, Ph),self._pi_a_giv_s(s,a, policies[h]), self._pi_term_giv_s(sp, policies[h]))
+
+        return self._backward(t, h, X, policies, transitions, Ph)*\
+               self._pi_a_giv_s(s,a, policies[h])*\
+               self._pi_term_giv_s(sp, transitions[h])
+
 
 
     def _backward(self, 
@@ -176,7 +249,7 @@ class JointSegCentroidInferenceDiscrete(object):
             return np.sum([ self._pi_a_giv_s(state,action, policies[h])* \
                             (self._pi_term_giv_s(next_state, transitions[h])* \
                             Ph[hp,h])\
-                           for h in range(self.k) \
+                           for h in range(self.k) if Ph[hp,h] > 0\
                          ])
 
         else:
@@ -184,7 +257,7 @@ class JointSegCentroidInferenceDiscrete(object):
                             self._pi_a_giv_s(state,action, policies[h])* \
                             (self._pi_term_giv_s(next_state, transitions[h])* \
                             Ph[hp,h])\
-                           for h in range(self.k) \
+                           for h in range(self.k) if Ph[hp,h] > 0\
                          ])
 
     def _forward(self, 
@@ -202,7 +275,7 @@ class JointSegCentroidInferenceDiscrete(object):
         action = traj[t][1]
 
         #base case
-        if t+2 == len(traj):
+        if t+2 >= len(traj):
             
             return self._pi_a_giv_s(next_state,action, policies[h])
 
@@ -211,7 +284,7 @@ class JointSegCentroidInferenceDiscrete(object):
                    np.sum([ self._pi_term_giv_s(state, transitions[h])* \
                             Ph[hp,h]* \
                             self._forward(t +1,hp, traj, policies, transitions, Ph) \
-                            for hp in range(self.k)])
+                            for hp in range(self.k) if Ph[hp,h] > 0])
 
 
 
@@ -228,6 +301,26 @@ class JointSegCentroidInferenceDiscrete(object):
         return pred
 
 
+
+    def _batchGrad(self, X, policy, policy_index, q):
+
+        gradSum = None
+
+        m = len(X)
+
+        for t in range(0, m):
+
+            obs = np.matrix(X[t][0])
+            action = X[t][1]
+
+            pointGrad = q[t, policy_index]*policy.log_deriv(obs, action)
+
+            if gradSum is None:
+                gradSum = pointGrad
+            else:
+                gradSum = gradSum + pointGrad
+
+        return gradSum*1.0/m
 
 
 
