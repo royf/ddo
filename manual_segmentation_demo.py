@@ -52,7 +52,7 @@ segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
 
 
 #We can fit the model with a logistic regression policy class
-s = SegCentroidInferenceDiscrete(LogitModel, 2)
+s = SegCentroidInferenceDiscrete(LogitModel, 3)
 q,p, policies = s.fit(segments,2,4)
 
 

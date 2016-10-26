@@ -29,7 +29,7 @@ class SegCentroidInferenceDiscrete(object):
         for it in range(0, max_iters):
 
             #print("Iteration", it, q, P)
-            print(P)
+            #print(P)
 
             q, P = self._updateQP(X, policies, q, P)
 
@@ -132,7 +132,100 @@ class SegCentroidInferenceDiscrete(object):
         return product
 
 
+
+class JointSegCentroidInferenceDiscrete(object):
+
+    def __init__(self, policy_class, transition_class, k):
+        self.policy_class = policy_class
+        self.transition_class = transition_class
+        self.k = k
+
+
+    #X is a trajectory
+    def fit(self, X, statedims, actiondims, max_iters=100, learning_rate=0.01):
+        
+        #create k initial policies
+        policies = [copy.copy(self.policy_class(statedims, actiondims, unnormalized=True)) for i in range(0,self.k)]
+
+        #create k initial transitions
+        transitions = [copy.copy(self.transition_class(statedims, 1, unnormalized=True)) for i in range(0,self.k)]
+
+        #hint transition matrix, defaulted to sequential
+        Ph = np.ones((self.k,self.k))/self.k 
+
+        print(self._backward(20, 1, X, policies, transitions, Ph))
+
+
+    def _backward(self, 
+                  #args
+                  t,
+                  hp,
+                  #control state
+                  traj, 
+                  policies,
+                  transitions,
+                  Ph):
+        
+        state = traj[t][0]
+        next_state = traj[t+1][0]
+        action = traj[t][1]
+
+        #base case
+        if t == 0:
             
+            return np.sum([ self._pi_a_giv_s(state,action, policies[h])* \
+                            (self._pi_term_giv_s(next_state, transitions[h])* \
+                            Ph[hp,h])\
+                           for h in range(self.k) \
+                         ])
+
+        else:
+            return np.sum([ self._backward(t-1, h, traj, policies, transitions, Ph)* \
+                            self._pi_a_giv_s(state,action, policies[h])* \
+                            (self._pi_term_giv_s(next_state, transitions[h])* \
+                            Ph[hp,h])\
+                           for h in range(self.k) \
+                         ])
+
+    def _forward(self, 
+                  #args
+                  t,
+                  h,
+                  #control state
+                  traj, 
+                  policies,
+                  transitions,
+                  Ph):
+        
+        state = traj[t][0]
+        next_state = traj[t+1][0]
+        action = traj[t][1]
+
+        #base case
+        if t+2 == len(traj):
+            
+            return self._pi_a_giv_s(next_state,action, policies[h])
+
+        else:
+            return self._pi_a_giv_s(next_state,action, policies[h]) * \
+                   np.sum([ self._pi_term_giv_s(state, transitions[h])* \
+                            Ph[hp,h]* \
+                            self._forward(t +1,hp, traj, policies, transitions, Ph) \
+                            for hp in range(self.k)])
+
+
+
+    def _pi_a_giv_s(self, s,a, policy):
+        obs = np.matrix(s)
+        pred = np.squeeze(policy.eval(obs))
+        action = a
+        return pred[action]
+
+
+    def _pi_term_giv_s(self, s, transition):
+        obs = np.matrix(s)
+        pred = np.squeeze(transition.eval(obs))
+        return pred
 
 
 
@@ -142,4 +235,4 @@ class SegCentroidInferenceDiscrete(object):
 
 
 
-
+        

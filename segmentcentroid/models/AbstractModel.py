@@ -6,10 +6,11 @@ Defines an abstract model
 
 class AbstractModel(object):
 
-    def __init__(self, statedim, actiondim, discrete=True):
+    def __init__(self, statedim, actiondim, discrete=True, unnormalized=False):
         self.statedim = statedim
         self.actiondim = actiondim
         self.discrete = True 
+        self.unnormalized = unnormalized
 
     #returns a probability distribution over actions
     def eval(self,s):

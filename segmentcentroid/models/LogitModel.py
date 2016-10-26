@@ -10,11 +10,11 @@ Defines a linear logistic model
 
 class LogitModel(AbstractModel):
 
-    def __init__(self,statedim, actiondim):
+    def __init__(self,statedim, actiondim, unnormalized=False):
       
-        self.theta = 10*np.random.randn(statedim, actiondim)
+        self.theta = np.random.rand(statedim, actiondim)
 
-        super(LogitModel, self).__init__(statedim, actiondim, discrete=True)
+        super(LogitModel, self).__init__(statedim, actiondim, discrete=True, unnormalized=unnormalized)
 
     #returns a probability distribution over actions
     def eval(self, s):
@@ -23,7 +23,10 @@ class LogitModel(AbstractModel):
         for i in range(0,linproj.shape[0]):
             result.append(scipy.special.expit(linproj[i]))
 
-        return np.squeeze(np.array(result)/np.sum(np.array(result)))
+        if self.unnormalized:
+            return np.squeeze(np.array(result))
+        else:
+            return np.squeeze(np.array(result)/np.sum(np.array(result)))
 
     #return the log derivative log \nabla_\theta \pi(s)
     def log_deriv(self, s, a):
