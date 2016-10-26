@@ -28,7 +28,8 @@ class SegCentroidInferenceDiscrete(object):
         #Outer Loop For Gradient Descent
         for it in range(0, max_iters):
 
-            print("Iteration", it, q, P)
+            #print("Iteration", it, q, P)
+            print(P)
 
             q, P = self._updateQP(X, policies, q, P)
 

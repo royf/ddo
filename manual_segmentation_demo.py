@@ -9,16 +9,28 @@ from segmentcentroid.planner.traj_utils import *
 
 import numpy as np
 
+"""
+This example demonstrates a proof of concept for manual segmentation
+"""
+
+#first we load the gridworld map and initialize the environment
 MAP_NAME = 'resources/GridWorldMaps/11x11-Rooms.txt'
 gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
 g = GridWorldEnv(gmap, noise=0.3)
 
-#g.visualize(policy)
 
+#Then we initialize the planner, and visualize the policy 
 v = ValueIterationPlanner(g)
+g.visualizePolicy(v.policy)
 
-#g.visualizePolicy(v.policy)
 
+#We can query the planner by running
+traj = v.plan(max_depth=100)
+g.visualizePlan(traj)
+
+
+#Next, let's collect a dataset
+#We can manually segment the data into each room's data
 segments = []
 
 traj = v.plan(max_depth=100)
@@ -37,10 +49,14 @@ traj = v.plan(max_depth=100)
 
 segments.extend(waypoint_segment(traj, [(2,5),  (8,4), (5,7), (3,9)]))
 
-s = SegCentroidInferenceDiscrete(LogitModel, 2)
 
+
+#We can fit the model with a logistic regression policy class
+s = SegCentroidInferenceDiscrete(LogitModel, 2)
 q,p, policies = s.fit(segments,2,4)
 
+
+#Visualization Code
 for p in policies:
     states = g.getAllStates()
     policy_hash = {}
@@ -48,22 +64,5 @@ for p in policies:
         policy_hash[s] = np.argmax(p.eval(np.array(s)))
 
     g.visualizePolicy(policy_hash)
-
-
-
-
-
-
-
-
-##Example 1##
-#Initialize GridWorld and query a state
-"""
-
-g.init()
-print g.getState()
-g.play(3)
-print g.getState()
-"""
 
 
