@@ -2,6 +2,9 @@
 from .AbstractEnv import *
 import numpy as np
 import copy
+from matplotlib import colors
+import matplotlib.pyplot as plt
+
 
 """
 This class defines an abstract environment,
@@ -53,7 +56,7 @@ class GridWorldEnv(AbstractEnv):
         if s is None:
             s = self.state
         possibleA = np.array([], np.uint8)
-        for a in xrange(self.actions_num):
+        for a in range(self.actions_num):
             ns = s + self.ACTIONS[a]
             if (
                     ns[0] < 0 or ns[0] == self.ROWS or
@@ -126,7 +129,6 @@ class GridWorldEnv(AbstractEnv):
         self.reward = self.reward + r
         self.termination = self.isTerminal()
 
-
     """
     This function rolls out a policy which is a map from state to action
     """
@@ -138,6 +140,117 @@ class GridWorldEnv(AbstractEnv):
             trajectory.append(self.getState())
 
         return trajectory
+
+
+
+    ##plannable environment
+
+    def getRewardFunction(self):
+
+        def _reward(ns,a):
+            # Compute the reward
+            r = 0
+            if self.map[ns[0], ns[1]] == self.GOAL:
+                r = self.GOAL_REWARD
+            if self.map[ns[0], ns[1]] == self.PIT:
+                r = self.PIT_REWARD
+            return r
+
+        return _reward
+
+
+    def getAllStates(self):
+        state_limits = np.shape(self.map)
+        return [(i,j) for i in range(0, state_limits[0]) for j in range(0, state_limits[1])] 
+
+    def getAllActions(self):
+        return range(0,4)
+
+    def getDynamicsModel(self):
+
+        dynamics = {}
+        states = self.getAllStates()
+
+        for s in states:
+            possibleActions = self.possibleActions(s)
+
+            for a in possibleActions:
+                dynamics[(s,a)] = []
+                expected_step = (s[0] + self.ACTIONS[a][0], s[1] + self.ACTIONS[a][1])
+                dynamics[(s,a)].append( (expected_step, 1-self.NOISE))
+
+                for ap in possibleActions:
+                    if ap != a:
+                        expected_step = (s[0] + self.ACTIONS[ap][0], s[1] + self.ACTIONS[ap][1])
+                        dynamics[(s,a)].append( (expected_step, self.NOISE/(len(possibleActions)-1)))                        
+
+        return dynamics
+
+
+
+
+    ###visualization routines
+    def visualizePolicy(self, policy):
+        cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
+
+        plt.figure()
+
+        #show gw
+        plt.imshow(self.map, 
+                   cmap=cmap, 
+                   interpolation='nearest',
+                   vmin=0,
+                   vmax=4)
+
+        ax = plt.axes()
+
+        #show policy
+        for state in policy:
+            
+            if policy[state] == None or \
+               self.map[state[0], state[1]] == self.BLOCKED:
+                continue
+
+            action = self.ACTIONS[policy[state]]
+            dx = action[0]*0.5
+            dy = action[1]*0.5
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc='k', ec='k')
+
+        plt.show()
+
+
+    def visualizePlan(self, plan):
+        cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
+
+        plt.figure()
+
+        #show gw
+        plt.imshow(self.map, 
+                   cmap=cmap, 
+                   interpolation='nearest',
+                   vmin=0,
+                   vmax=4)
+
+        ax = plt.axes()
+
+        #show policy
+        for sa in plan:
+            
+            state = sa[0]
+            actioni = sa[1]
+
+            if self.map[state[0], state[1]] == self.BLOCKED:
+                continue
+
+            action = self.ACTIONS[actioni]
+            dx = action[0]*0.5
+            dy = action[1]*0.5
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc='c', ec='c')
+
+        plt.show()
+
+
+
 
 
         
