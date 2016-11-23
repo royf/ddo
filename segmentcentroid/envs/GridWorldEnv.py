@@ -65,9 +65,16 @@ class GridWorldEnv(AbstractEnv):
         else:
             ngoal = pgoal
 
-        self.map[nstart[0], nstart[1]] =self.START
-        self.map[ngoal[0], ngoal[1]] =self.GOAL
-        self.start_state = np.argwhere(self.map == self.START)[0]
+
+        if (nstart[0] == ngoal[0] and nstart[1] == ngoal[1]) \
+            and (pgoal == None or pstart == None):
+            self.map[start[0], start[1]] = self.START
+            self.map[goal[0], goal[1]] = self.GOAL
+            self.generateRandomStartGoal(pstart,pgoal)
+        else:
+            self.map[nstart[0], nstart[1]] =self.START
+            self.map[ngoal[0], ngoal[1]] =self.GOAL
+            self.start_state = np.argwhere(self.map == self.START)[0]
 
 
     #helper method returns the terminal state
@@ -222,7 +229,7 @@ class GridWorldEnv(AbstractEnv):
 
 
     ###visualization routines
-    def visualizePolicy(self, policy, blank=False):
+    def visualizePolicy(self, policy, transitions=None, blank=False):
         cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
 
         plt.figure()
@@ -252,11 +259,18 @@ class GridWorldEnv(AbstractEnv):
                 continue
 
             action = self.ACTIONS[policy[state]]
-            
+
+            alpha = 1
+
+            #if transitions != None:
+            #    alpha = 1-transitions[state]
+            #    if alpha < 0.5:
+            #        alpha = 0.2
+
             dx = action[0]*0.5
             dy = action[1]*0.5
 
-            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(0,0,0,1), ec=(0,0,0,1))
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(0,0,0,alpha), ec=(0,0,0,alpha))
 
 
         plt.show()
