@@ -159,7 +159,7 @@ b_{t,h}&\mathrel{\propto}\p(\rho,h_t=h,\bot\text{ at }s_{t+1})=\sum_{h'}\p(\rho,
 &=\sum_{h'}\p(\rho_{\le t},h_t=h)\pi_h(a_t|s_t)p(s_{t+1}|s_t,a_t)\psi_h(s_{t+1})P(h'|h)\p(\rho_{>t+1}|s_{t+1},h_{t+1}=h')\\
 \p(\rho_{\le t+1},h_{t+1}=h')&=\sum_h\p(\rho_{\le t},h_t=h)\pi_h(a_t|s_t)p(s_{t+1}|s_t,a_t)(\psi_h(s_{t+1})P(h'|h)+(1-\psi_h(s_{t+1}))\delta_{h,h'})\\
 \p(\rho_{>t}|s_t,h_t=h)&=\pi_h(a_t|s_t)p(s_{t+1}|s_t,a_t)\sum_{h'}(\psi_h(s_{t+1})P(h'|h)+(1-\psi_h(s_{t+1}))\delta_{h,h'})\p(\rho_{>t+1}|s_{t+1},h_t=h')\\
-\delta\theta_h&=\alpha\sum_{t=0}^{T-1}(q_{t,h}\log\pi_h(a_t|s_t)+b_{t,h}\log\pi_h(\bot|s_t))
+\delta\theta_h&=\alpha\sum_{t=0}^{T-1}(q_{t,h}\dif_{\theta_h}\log\pi_h(a_t|s_t)+b_{t,h}\dif_{\theta_h}\log\psi_h(s_t))
 }
 $p(s_{t+1}|s_t,a_t)$ can be dropped due to the normalization.
 
