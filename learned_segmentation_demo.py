@@ -7,6 +7,8 @@ from segmentcentroid.models.LimitedTabularModel import LimitedTabularModel
 
 from segmentcentroid.models.LogitModel import LogitModel, BinaryLogitModel
 
+from segmentcentroid.models.TFModel import TFModel
+
 from segmentcentroid.models.ForestModel import ForestModel
 
 from segmentcentroid.planner.value_iteration import ValueIterationPlanner
@@ -44,7 +46,7 @@ for i in range(0,10):
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-s = JointSegCentroidInferenceDiscrete(LogitModel, BinaryLogitModel, 4, 6, 4)
+s = JointSegCentroidInferenceDiscrete(TFModel, BinaryLogitModel, 4, 6, 4)
 #s.fit(full_traj)
 
 policies, transitions = s.fit(full_traj, learning_rate=0.01, max_iters=50)
