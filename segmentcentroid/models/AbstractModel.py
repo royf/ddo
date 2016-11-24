@@ -23,3 +23,6 @@ class AbstractModel(object):
 
     def descent(self, grad_theta, learning_rate):
         raise NotImplemented("Must implement a descent step")
+
+    def visited(self, s):
+        return True

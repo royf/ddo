@@ -4,6 +4,7 @@ import numpy as np
 import copy
 from matplotlib import colors
 import matplotlib.pyplot as plt
+import random
 
 
 """
@@ -26,7 +27,7 @@ class GridWorldEnv(AbstractEnv):
     STEP_REWARD = -.001
 
     #takes in a 2d integer map coded by the first line of comments
-    def __init__(self, gmap, noise=0.1):
+    def __init__(self, gmap, noise=0.1, random_start=True):
 
         self.map = gmap
         self.start_state = np.argwhere(self.map == self.START)[0]
@@ -35,7 +36,45 @@ class GridWorldEnv(AbstractEnv):
             [[0, self.ROWS - 1], [0, self.COLS - 1]])
         self.NOISE = noise
 
+        if random_start:
+            self.generateRandomStartGoal()
+
+        print(self.start_state)
+
         super(GridWorldEnv, self).__init__()
+
+
+    def generateRandomStartGoal(self, pstart=None, pgoal=None):
+        start = np.argwhere(self.map == self.START)[0]
+        goal = np.argwhere(self.map == self.GOAL)[0]
+        self.map[start[0], start[1]] = self.EMPTY
+        self.map[goal[0], goal[1]] = self.EMPTY
+
+        empty_cells = np.argwhere(self.map == self.EMPTY)
+        p,_ = np.shape(empty_cells)
+
+        nstart = empty_cells[np.random.choice(np.arange(p)),:]
+
+        if pstart==None:
+            nstart = empty_cells[np.random.choice(np.arange(p)),:]
+        else:
+            nstart = pstart
+
+        if pgoal==None:
+            ngoal = empty_cells[np.random.choice(np.arange(p)),:]
+        else:
+            ngoal = pgoal
+
+
+        if (nstart[0] == ngoal[0] and nstart[1] == ngoal[1]) \
+            and (pgoal == None or pstart == None):
+            self.map[start[0], start[1]] = self.START
+            self.map[goal[0], goal[1]] = self.GOAL
+            self.generateRandomStartGoal(pstart,pgoal)
+        else:
+            self.map[nstart[0], nstart[1]] =self.START
+            self.map[ngoal[0], ngoal[1]] =self.GOAL
+            self.start_state = np.argwhere(self.map == self.START)[0]
 
 
     #helper method returns the terminal state
@@ -190,13 +229,21 @@ class GridWorldEnv(AbstractEnv):
 
 
     ###visualization routines
-    def visualizePolicy(self, policy):
+    def visualizePolicy(self, policy, transitions=None, blank=False):
         cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
 
         plt.figure()
 
+        newmap = copy.copy(self.map)
+
+        if blank:
+            start = np.argwhere(self.map == self.START)[0]
+            goal = np.argwhere(self.map == self.GOAL)[0]
+            newmap[start[0], start[1]] = self.EMPTY
+            newmap[goal[0], goal[1]] = self.EMPTY
+
         #show gw
-        plt.imshow(self.map, 
+        plt.imshow(newmap, 
                    cmap=cmap, 
                    interpolation='nearest',
                    vmin=0,
@@ -212,20 +259,38 @@ class GridWorldEnv(AbstractEnv):
                 continue
 
             action = self.ACTIONS[policy[state]]
+
+            alpha = 1
+
+            #if transitions != None:
+            #    alpha = 1-transitions[state]
+            #    if alpha < 0.5:
+            #        alpha = 0.2
+
             dx = action[0]*0.5
             dy = action[1]*0.5
-            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc='k', ec='k')
+
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(0,0,0,alpha), ec=(0,0,0,alpha))
+
 
         plt.show()
 
 
-    def visualizePlan(self, plan):
+    def visualizePlan(self, plan, blank=False):
         cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
 
         plt.figure()
 
+        newmap = copy.copy(self.map)
+
+        if blank:
+            start = np.argwhere(self.map == self.START)[0]
+            goal = np.argwhere(self.map == self.GOAL)[0]
+            newmap[start[0], start[1]] = self.EMPTY
+            newmap[goal[0], goal[1]] = self.EMPTY
+
         #show gw
-        plt.imshow(self.map, 
+        plt.imshow(newmap, 
                    cmap=cmap, 
                    interpolation='nearest',
                    vmin=0,
@@ -233,6 +298,7 @@ class GridWorldEnv(AbstractEnv):
 
         ax = plt.axes()
 
+        c = (1,0,0,0.3)
         #show policy
         for sa in plan:
             
@@ -245,7 +311,7 @@ class GridWorldEnv(AbstractEnv):
             action = self.ACTIONS[actioni]
             dx = action[0]*0.5
             dy = action[1]*0.5
-            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc='c', ec='c')
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=c, ec=c)
 
         plt.show()
 
