@@ -262,11 +262,6 @@ class GridWorldEnv(AbstractEnv):
 
             alpha = 1
 
-            #if transitions != None:
-            #    alpha = 1-transitions[state]
-            #    if alpha < 0.5:
-            #        alpha = 0.2
-
             dx = action[0]*0.5
             dy = action[1]*0.5
 

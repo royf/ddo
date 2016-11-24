@@ -3,6 +3,8 @@
 from segmentcentroid.envs.GridWorldEnv import GridWorldEnv
 from segmentcentroid.planner.mcts import MCTS
 from segmentcentroid.models.TabularModel import TabularModel
+from segmentcentroid.models.LimitedTabularModel import LimitedTabularModel
+
 from segmentcentroid.models.LogitModel import LogitModel, BinaryLogitModel
 
 from segmentcentroid.models.ForestModel import ForestModel
@@ -42,13 +44,16 @@ for i in range(0,10):
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-s = JointSegCentroidInferenceDiscrete(TabularModel, TabularModel, 4, 6, 4)
+s = JointSegCentroidInferenceDiscrete(LogitModel, BinaryLogitModel, 4, 6, 4)
 #s.fit(full_traj)
 
-policies, transitions = s.fit(full_traj, learning_rate=0.2)
+policies, transitions = s.fit(full_traj, learning_rate=0.01, max_iters=50)
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 g.generateRandomStartGoal()
+
+g.visualizePlan(full_traj, blank=True)
+
 #Visualization Code
 for i,p in enumerate(policies):
     states = g.getAllStates()
@@ -66,13 +71,13 @@ for i,p in enumerate(policies):
 
             action = np.argmax(p.eval(np.array(ns)))
 
-            if p.eval(np.array(ns))[action] > .30: 
+            if p.eval(np.array(ns))[action] > .4: 
                 policy_hash[s] = action
 
             #print(transitions[i].eval(np.array(ns)))
             trans_hash[s] = transitions[i].eval(np.array(ns))
 
-    g.visualizePolicy(policy_hash, trans_hash)
+    g.visualizePolicy(policy_hash, trans_hash, blank=True)
 
 
 

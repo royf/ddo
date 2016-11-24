@@ -63,9 +63,9 @@ class JointSegCentroidInferenceDiscrete(object):
                     self.policies[seg].descent(self._batchGradP(X, seg, self.Q), learning_rate)
 
                 if self.transitions[0].isTabular:
-                    self.transitions[seg].descent(self._tabGradT(X, seg, self.Q), learning_rate)
+                    self.transitions[seg].descent(self._tabGradT(X, seg, self.B), learning_rate)
                 else:
-                    self.transitions[seg].descent(self._batchGradT(X, seg, self.B, self.Q), learning_rate)
+                    self.transitions[seg].descent(self._batchGradT(X, seg, self.B), learning_rate)
 
         return self.policies, self.transitions
 
@@ -218,7 +218,7 @@ class JointSegCentroidInferenceDiscrete(object):
         return gradSum*1.0/m
 
 
-    def _batchGradT(self, X, policy_index, b, q):
+    def _batchGradT(self, X, policy_index, b):
 
         gradSum = None
 
@@ -229,16 +229,17 @@ class JointSegCentroidInferenceDiscrete(object):
         for t in range(0, m):
 
             obs = np.matrix(X[t+1][0])
-            action = (np.argmax(q[t, :]) != np.argmax(q[t+1, :]))*1.0
 
-            pointGrad = q[t, policy_index]*self.transitions[policy_index].log_deriv(obs, action)
+            pointGrad1 = b[t, policy_index]*self.transitions[policy_index].log_deriv(obs, 1)
+
+            pointGrad2 = (1-b[t, policy_index])*self.transitions[policy_index].log_deriv(obs, 0)
 
             #print(pointGrad)
 
             if gradSum is None:
-                gradSum = pointGrad
+                gradSum = pointGrad1+ pointGrad2
             else:
-                gradSum = gradSum + pointGrad
+                gradSum = gradSum + pointGrad1 + pointGrad2
 
         return gradSum*1.0/m
 
@@ -267,25 +268,26 @@ class JointSegCentroidInferenceDiscrete(object):
         return gradSum
 
 
-    def _tabGradT(self, X, policy_index, q):
+    def _tabGradT(self, X, policy_index, b):
 
         gradSum = []
 
-        q = normalize(q, norm='l1', axis=1)
+        b = normalize(b, norm='l1', axis=1)
 
         m = len(X)-1
 
         for t in range(0, m):
 
             obs = np.matrix(X[t+1][0])
-            action = (np.argmax(q[t, :]) != np.argmax(q[t+1, :]))*1.0
 
-            #print(q[t, policy_index], policy_index)
+            pointGrad1 = (b[t, policy_index], \
+                         self.transitions[policy_index].log_deriv(obs, 1))
 
-            pointGrad = (q[t, policy_index], \
-                         self.transitions[policy_index].log_deriv(obs, action))
+            pointGrad2 = ((1-b[t, policy_index]), \
+                         self.transitions[policy_index].log_deriv(obs, 0))
 
-            gradSum.append(pointGrad)
+            gradSum.append(pointGrad1)
+            gradSum.append(pointGrad2)
 
         return gradSum
 
