@@ -260,7 +260,7 @@ class GridWorldEnv(AbstractEnv):
 
             action = self.ACTIONS[policy[state]]
 
-            alpha = 1
+            alpha = 1 - transitions[state]
 
             dx = action[0]*0.5
             dy = action[1]*0.5

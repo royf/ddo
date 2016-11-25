@@ -36,8 +36,8 @@ for i in range(0,10):
     for t in traj:
         ns = np.ndarray(shape=(6))
         ns[0:2] = t[0]
-        ns[2:4] = t[0]#np.argwhere(g.map == g.GOAL)[0]
-        ns[4:6] = t[0]#np.argwhere(g.map == g.START)[0]
+        ns[2:4] = np.argwhere(g.map == g.GOAL)[0]
+        ns[4:6] = np.argwhere(g.map == g.START)[0]
 
         new_traj.append((ns,t[1]))
 
@@ -46,10 +46,10 @@ for i in range(0,10):
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-s = JointSegCentroidInferenceDiscrete(TFModel, BinaryLogitModel, 4, 6, 4)
+s = JointSegCentroidInferenceDiscrete(TFModel, BinaryLogitModel, 2, 6, 4)
 #s.fit(full_traj)
 
-policies, transitions = s.fit(full_traj, learning_rate=0.01, max_iters=50)
+policies, transitions = s.fit(full_traj, learning_rate=0.2, max_iters=10)
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 g.generateRandomStartGoal()
@@ -66,10 +66,10 @@ for i,p in enumerate(policies):
         
         ns = np.ndarray(shape=(6))
         ns[0:2] = s
-        ns[2:4] = s#np.argwhere(g.map == g.GOAL)[0]
-        ns[4:6] = s#np.argwhere(g.map == g.START)[0]
+        ns[2:4] = np.argwhere(g.map == g.GOAL)[0]
+        ns[4:6] = np.argwhere(g.map == g.START)[0]
 
-        if p.visited(ns):
+        if transitions[i].visited(ns):
 
             action = np.argmax(p.eval(np.array(ns)))
 
@@ -79,7 +79,7 @@ for i,p in enumerate(policies):
             #print(transitions[i].eval(np.array(ns)))
             trans_hash[s] = transitions[i].eval(np.array(ns))
 
-    g.visualizePolicy(policy_hash, trans_hash, blank=True)
+    g.visualizePolicy(policy_hash, trans_hash)
 
 
 

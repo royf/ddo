@@ -23,6 +23,7 @@ class TFModel(AbstractModel):
         self.sess = tf.Session()
         self.sess.run(tf.initialize_all_variables())
         self.isTabular = True
+        self.logDeriv = self.get_log_deriv()
 
         super(TFModel, self).__init__(statedim, actiondim, discrete=True, unnormalized=unnormalized)
 
@@ -45,15 +46,30 @@ class TFModel(AbstractModel):
         b_out = tf.Variable(tf.random_normal([actiondim]))
         y = tf.nn.softmax(tf.matmul(h1, W_out) + b_out)
 
-        logprob = tf.reduce_sum(- a * tf.log(y), 1)
+        logprob = tf.reduce_sum(a * tf.log(y), 1)
 
         return x, a, y, logprob
 
 
+    def get_log_deriv(self):
+        grads = tf.gradients(self.logprob, tf.trainable_variables())
+        grads = list(zip(grads, tf.trainable_variables()))
+        
+        result = []
+        for i in grads:
+            if i[0] != None: #not sure why we need this but breaks without
+                result.append(i)
+
+        return result
+
+
+
     #returns a probability distribution over actions
     def eval(self, s):
-        feed_dict = {self.x: s}
-        return self.sess.run(self.y, feed_dict)
+        feed_dict = {self.x: s.reshape((1,self.statedim))}
+        unsmoothed = self.sess.run(self.y, feed_dict)
+        smoothed = np.max(unsmoothed, 0.02)
+        return smoothed/np.sum(smoothed)
 
     #return the log derivative log \nabla_\theta \pi(s)
     def log_deriv(self, s, a):
@@ -61,13 +77,10 @@ class TFModel(AbstractModel):
         encoded_action = np.zeros((1,self.actiondim))
         encoded_action[0,a] = 1
         feed_dict = {self.x: s, self.a: encoded_action}
-        grads = tf.gradients(self.logprob, tf.trainable_variables())
-        grads = list(zip(grads, tf.trainable_variables()))
-        
+
         result = []
-        for i in grads:
-            if i[0] != None:
-                result.append((i[1], self.sess.run(i[0],feed_dict)))
+        for i in self.logDeriv:
+            result.append((i[1], self.sess.run(i[0],feed_dict)))
 
         return result
 
@@ -75,12 +88,17 @@ class TFModel(AbstractModel):
 
         for i,g in enumerate(grad_theta):
             weight = g[0]
-            print(i)
 
             for v in g[1]:
                 tfvar = v[0]
                 grad = v[1]
-                self.sess.run(tfvar.assign(tfvar - weight*learning_rate*grad))
+                tfvar.assign(tfvar + weight*learning_rate*grad)
+
+        print("start")
+        g = grad_theta[0]
+        for v in g[1]:
+            self.sess.run(v[0])
+        print("end")
 
 
 
