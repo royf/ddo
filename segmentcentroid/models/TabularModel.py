@@ -15,7 +15,8 @@ class TabularModel(AbstractModel):
       
         self.theta_map = {}
         self.isTabular = True
-        self.actionbias = np.random.choice(np.arange(0,actiondim))
+        #self.actionbias = np.random.choice(np.arange(0,actiondim))
+        self.smoothing = 1e-6
 
         super(TabularModel, self).__init__(statedim, actiondim, discrete=True, unnormalized=unnormalized)
 
@@ -32,15 +33,12 @@ class TabularModel(AbstractModel):
         for i in range(0,self.actiondim):
             if (sp,i) not in self.theta_map:
                 
-                if i == self.actionbias:
-                    init = 1.0
-                else:
-                    init = 0.02
+                init = np.random.choice([self.smoothing, 1])
 
                 result[i] = init
                 self.theta_map[(sp,i)] = init
             else:
-                result[i] = max(self.theta_map[(sp,i)],0.02)
+                result[i] = max(self.theta_map[(sp,i)],self.smoothing)
 
         #print(np.squeeze(result)/np.sum(np.array(result)))
 
@@ -55,7 +53,7 @@ class TabularModel(AbstractModel):
 
         for i in range(0,2):
             if (sp,i) not in self.theta_map:
-                init = np.random.choice(np.arange(1,2))
+                init = np.random.choice([self.smoothing, 1])
                 result[i] = init
                 self.theta_map[(sp,i)] = init
             else:
@@ -79,7 +77,7 @@ class TabularModel(AbstractModel):
         #print(self.theta_map)
 
         for k in self.theta_map:
-            self.theta_map[k] = 0.02
+            self.theta_map[k] = max(self.smoothing, self.theta_map[k]-learning_rate)
 
         for obs in grad_theta:
             weight = obs[0]
@@ -87,9 +85,9 @@ class TabularModel(AbstractModel):
             action = obs[1][1]
 
             if (state,action) not in self.theta_map:
-                self.theta_map[(state,action)] = max(weight, 0.02)
+                self.theta_map[(state,action)] = max(weight, self.smoothing)
 
-            self.theta_map[(state,action)] = max(weight,0.02)
+            self.theta_map[(state,action)] = max(weight,self.smoothing)
 
     def visited(self, s):
         return (self.state_to_tuple(s) in set([k[0] for k in self.theta_map]))

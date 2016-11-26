@@ -69,6 +69,7 @@ class TFModel(AbstractModel):
         feed_dict = {self.x: s.reshape((1,self.statedim))}
         unsmoothed = self.sess.run(self.y, feed_dict)
         smoothed = np.max(unsmoothed, 0.02)
+        #print(s, smoothed/np.sum(smoothed))
         return smoothed/np.sum(smoothed)
 
     #return the log derivative log \nabla_\theta \pi(s)
@@ -92,13 +93,15 @@ class TFModel(AbstractModel):
             for v in g[1]:
                 tfvar = v[0]
                 grad = v[1]
-                tfvar.assign(tfvar + weight*learning_rate*grad)
+                #print(weight)
+                tf.assign_add(v[0], weight*learning_rate*grad)
 
-        print("start")
+        #print("start")
         g = grad_theta[0]
         for v in g[1]:
             self.sess.run(v[0])
-        print("end")
+            
+        #print("end")
 
 
 

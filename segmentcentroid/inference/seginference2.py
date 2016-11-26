@@ -25,27 +25,52 @@ class JointSegCentroidInferenceDiscrete(object):
         self.B = None
         self.P = np.ones((self.k, self.k))/self.k
 
+        self.iter_state = {}
+
+
+    #Xl is a list of trajectories
+    def fit(self, 
+            Xl, 
+            max_iters=20, 
+            max_liters=1, 
+            learning_rate=0.01):
+
+        for it in range(0, max_iters):
+            for i, traj in enumerate(Xl):
+                self.init_iter(i, traj)
+                self.iter_state[i] = self.fitTraj(traj, max_iters=max_liters, learning_rate=learning_rate)
+                print("Iteration ", it,": ",i, np.argmax(self.Q, axis=1), np.argmax(self.B, axis=1))
+
+        return self.policies, self.transitions
+
+    def init_iter(self,index, X):
+        if index in self.iter_state:
+            print("loaded")
+            self.Q, self.B, self.fq, self.bq, self.P = self.iter_state[index]
+        else:
+            #uniform probability of each segment
+            self.Q = np.ones((len(X), self.k))/self.k
+            self.fq = np.ones((len(X)+1, self.k))/self.k
+            self.bq = np.ones((len(X)+1, self.k))/self.k
+
+            #uniform probability of next timestep terminating
+            self.B = np.ones((len(X), self.k))/2
+
+            #uniform transition probabilities
+            self.P = np.ones((self.k, self.k))/self.k
+
+
     #X is a trajectory
-    def fit(self, X, max_iters=50, learning_rate=0.01):
-        #uniform probability of each segment
-        self.Q = np.ones((len(X), self.k))/self.k
-        self.fq = np.ones((len(X)+1, self.k))/self.k
-        self.bq = np.ones((len(X)+1, self.k))/self.k
-
-        #uniform probability of next timestep terminating
-        self.B = np.ones((len(X), self.k))/2
-
-        #uniform transition probabilities
-        self.P = np.ones((self.k, self.k))/self.k
-
+    def fitTraj(self, X, max_iters=50, learning_rate=0.01):
         #all the data
         self.X = X
 
         for it in range(0, max_iters):
 
-            print("Iteration", it, np.argmax(self.Q, axis=1), np.argmax(self.B, axis=1))
+            print("Sub-Iteration ", it, np.argmax(self.Q, axis=1), np.argmax(self.B, axis=1))
 
             self.forward()
+
             self.backward()
 
             self.Q = np.multiply(self.fq,self.bq)
@@ -67,7 +92,8 @@ class JointSegCentroidInferenceDiscrete(object):
                 else:
                     self.transitions[seg].descent(self._batchGradT(X, seg, self.B), learning_rate)
 
-        return self.policies, self.transitions
+        return self.Q, self.B, self.fq, self.bq, self.P
+
 
     def forward(self, t=None):
 
@@ -100,7 +126,7 @@ class JointSegCentroidInferenceDiscrete(object):
 
         for k in forward_dict:
             #print(forward_dict[k], k)
-            self.fq[k[0],k[1]] = forward_dict[k]
+            self.fq[k[0],k[1]] = max(forward_dict[k],1e-6)
 
 
     def backward(self, t=None):
@@ -142,7 +168,7 @@ class JointSegCentroidInferenceDiscrete(object):
                 #print(backward_dict[(cur_time-1, hp)], total, cur_time, len(self.X))
 
         for k in backward_dict:
-            self.bq[k[0],k[1]] = backward_dict[k]
+            self.bq[k[0],k[1]] = max(backward_dict[k],1e-6)
 
 
     def termination(self, t):

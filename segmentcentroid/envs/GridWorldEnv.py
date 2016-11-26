@@ -39,7 +39,7 @@ class GridWorldEnv(AbstractEnv):
         if random_start:
             self.generateRandomStartGoal()
 
-        print(self.start_state)
+        print(self.start_state, np.argwhere(self.map == self.GOAL)[0])
 
         super(GridWorldEnv, self).__init__()
 
