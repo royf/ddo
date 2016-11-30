@@ -90,11 +90,11 @@ class TFModel(object):
 
         loss, pivars, psivars = self.getLossFunction()
 
-        opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+        opt = tf.train.GradientDescentOptimizer(learning_rate=1e-6)
 
         train = opt.minimize(loss)
 
-        for it in range(10):
+        for it in range(100):
             print("Iter", it)
             weights = self.fb.fit(X)
             for i in range(len(X)):
@@ -115,6 +115,7 @@ class TFModel(object):
                     feed_dict[psivars[j][2]] = np.reshape(weights[i][1][:,j], (Xm.shape[0],1)) 
 
                 self.sess.run(train, feed_dict)
+                print(self.sess.run(loss, feed_dict))
 
 
     #helper method that formats the trajectory

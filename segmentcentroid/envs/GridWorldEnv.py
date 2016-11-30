@@ -298,14 +298,14 @@ class GridWorldEnv(AbstractEnv):
         for sa in plan:
             
             state = sa[0]
-            actioni = sa[1]
+            actioni = np.argwhere(np.ravel(sa[1])>0)[0]
 
             if self.map[state[0], state[1]] == self.BLOCKED:
                 continue
 
             action = self.ACTIONS[actioni]
-            dx = action[0]*0.5
-            dy = action[1]*0.5
+            dx = action[0,0]*0.5
+            dy = action[0,1]*0.5
             ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=c, ec=c)
 
         plt.show()

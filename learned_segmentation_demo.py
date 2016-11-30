@@ -49,13 +49,18 @@ for i in range(0,2):
         new_traj.append((ns,a))
 
     full_traj.append(new_traj)
-    #vis_traj.extend(new_traj)
+    vis_traj.extend(new_traj)
+
+g.visualizePlan(vis_traj,blank=True)
 
 m.fit(full_traj)
 
+actions = np.eye(4)
+
+
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-for i in enumerate(m.k):
+for i in range(m.k):
     states = g.getAllStates()
     policy_hash = {}
     trans_hash = {}
@@ -67,15 +72,17 @@ for i in enumerate(m.k):
         ns[2:4] = s#np.argwhere(g.map == g.GOAL)[0]
         ns[4:6] = s#np.argwhere(g.map == g.START)[0]
 
-        action = np.argmax(p.eval(np.array(ns)))
+        #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
+        action = np.argmax([m.evalpi(i,ns, actions[j,:]) for j in range(4)])
 
         #if p.eval(np.array(ns))[action] > .5: 
         policy_hash[s] = action
 
         #print(transitions[i].eval(np.array(ns)))
-        trans_hash[s] = seg.transitions[i].eval(np.array(ns))
+        trans_hash[s] = 0#m.evalpsi(i,ns)
 
     g.visualizePolicy(policy_hash, trans_hash, blank=True)
+
 
 #m.fit()
 

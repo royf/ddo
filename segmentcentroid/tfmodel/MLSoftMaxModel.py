@@ -50,7 +50,7 @@ class MLSoftMaxModel(TFModel):
         logit = tf.matmul(h1, W_out) + b_out
         y = tf.nn.softmax(logit)
 
-        logprob = -tf.log(tf.reduce_sum(y*a))
+        logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
         wlogprob = weight*logprob
         
@@ -86,7 +86,8 @@ class MLSoftMaxModel(TFModel):
         logit = tf.matmul(h1, W_out) + b_out
 
         y = tf.nn.softmax(logit)
-        logprob = -tf.log(tf.reduce_sum(y*a))
+
+        logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
         wlogprob = weight*logprob
         
@@ -134,6 +135,7 @@ class MLSoftMaxModel(TFModel):
     def _evalpi(self, index, s, a):
         feed_dict = {self.policy_networks[index]['state']: s.reshape((1, self.statedim[0]))}
         encoded_action = np.argwhere(a > 0)[0][0]
+        #print(encoded_action)
         dist = np.ravel(self.sess.run(self.policy_networks[index]['prob'], feed_dict))
         
         if np.isnan(dist[0]):
@@ -145,7 +147,7 @@ class MLSoftMaxModel(TFModel):
 
             raise ValueError("Error!!!")
 
-        #print(s, np.sum(dist), dist)
+        # print(s, np.sum(dist), dist)
 
         #if np.sum(dist) == 0:
         #    print("clip")

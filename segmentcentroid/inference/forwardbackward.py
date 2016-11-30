@@ -12,7 +12,7 @@ class ForwardBackward(object):
     with model and logging parameters, and is fit with a list of trajectories.
     """
 
-    def __init__(self, model, verbose=True):
+    def __init__(self, model, verbose=False):
         """
         model: This is a model object which is a wrapper for a tensorflow model
         verbose: True means that FB algorithm will print logging output to stdout
@@ -95,11 +95,13 @@ class ForwardBackward(object):
         self.Q = np.exp(np.add(self.fq,self.bq))
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
-        if self.verbose:
-            print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1))            
+        #if self.verbose:
+        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1))            
 
         for t in range(len(self.X)-1):
             self.B[t,:] = np.exp(self.termination(t))
+
+        self.B = normalize(self.B, norm='l1', axis=1)
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
@@ -142,8 +144,8 @@ class ForwardBackward(object):
                                         for h in range(self.k)
                                      ])
 
-                if self.verbose:
-                    print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1) 
+                #if self.verbose:
+                #print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
