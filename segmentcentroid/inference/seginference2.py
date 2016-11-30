@@ -116,8 +116,8 @@ class JointSegCentroidInferenceDiscrete(object):
                 
                 total = 0
 
+
                 for h in range(self.k):
-                    #print(h,hp,cur_time, forward_dict[(cur_time, h)], self._pi_a_giv_s(state,action,self.policies[h]), self.P[hp,h], self._pi_term_giv_s(next_state,self.transitions[h]), self._pi_term_giv_s(next_state,self.transitions[h]),(hp == h))
                     total = total + forward_dict[(cur_time, h)]*self._pi_a_giv_s(state,action,self.policies[h])*\
                                                                (self.P[hp,h]*self._pi_term_giv_s(next_state,self.transitions[h]) + \
                                                                  (1-self._pi_term_giv_s(next_state,self.transitions[h]))*(hp == h)
@@ -156,6 +156,7 @@ class JointSegCentroidInferenceDiscrete(object):
             for h in range(self.k):
                 
                 total = 0
+
 
                 for hp in range(self.k):
                     total = total + backward_dict[(cur_time, hp)]*\

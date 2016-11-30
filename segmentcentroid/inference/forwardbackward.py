@@ -29,6 +29,7 @@ class ForwardBackward(object):
         self.X = None
         self.Q = None
         self.B = None
+        self.T = None
 
         self.P = np.ones((self.k, self.k))/self.k
 
@@ -64,12 +65,14 @@ class ForwardBackward(object):
         Internal method that initializes the state variables
         """
 
-        self.Q = np.ones((len(X), self.k))/self.k
+        self.Q = np.ones((len(X)+1, self.k))/self.k
         self.fq = np.ones((len(X)+1, self.k))/self.k
         self.bq = np.ones((len(X)+1, self.k))/self.k
 
         #uniform probability of next timestep terminating
-        self.B = np.ones((len(X), self.k))/2
+        self.B = np.ones((len(X)+1, self.k))/2
+
+        self.T = np.zeros((len(X), self.k))
 
         #uniform transition probabilities
         self.P = np.ones((self.k, self.k))/self.k
@@ -101,7 +104,12 @@ class ForwardBackward(object):
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
 
-        return self.Q, self.B
+
+        for t in range(len(self.X)):
+            for i in range(self.k):
+                self.T[t,i] = self._pi_term_giv_s(X[t][0],i)
+
+        return self.Q[0:len(X),:], self.B[0:len(X),:], self.T
 
 
     def forward(self):

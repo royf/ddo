@@ -7,7 +7,7 @@ from segmentcentroid.models.LimitedTabularModel import LimitedTabularModel
 
 from segmentcentroid.models.LogitModel import LogitModel, BinaryLogitModel
 
-from segmentcentroid.models.TFModel import TFModel
+from segmentcentroid.tfmodel.MLSoftMaxModel import MLSoftMaxModel
 
 from segmentcentroid.models.ForestModel import ForestModel
 
@@ -22,11 +22,15 @@ import copy
 This example demonstrates a proof of concept for manual segmentation
 """
 
+m  = MLSoftMaxModel((6,1), (4,1), 2)
+
 #first we load the gridworld map and initialize the environment
-MAP_NAME = 'resources/GridWorldMaps/Hallway.txt'
+MAP_NAME = 'resources/GridWorldMaps/Roundabout.txt'
 gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
 full_traj = []
-for i in range(0,100):
+vis_traj = []
+
+for i in range(0,2):
     g = GridWorldEnv(copy.copy(gmap), noise=0.0)
     g.generateRandomStartGoal()
     v = ValueIterationPlanner(g)
@@ -39,27 +43,19 @@ for i in range(0,100):
         ns[2:4] = t[0]#np.argwhere(g.map == g.GOAL)[0]
         ns[4:6] = t[0]#np.argwhere(g.map == g.START)[0]
 
-        new_traj.append((ns,t[1]))
+        a = np.zeros(shape=(4,1))
+        a[t[1]] = 1
+
+        new_traj.append((ns,a))
 
     full_traj.append(new_traj)
+    #vis_traj.extend(new_traj)
 
-
-g = GridWorldEnv(copy.copy(gmap), noise=0.0)
-
-seg = JointSegCentroidInferenceDiscrete(TFModel, TabularModel, 8, 6, 4)
-#s.fit(full_traj)
-
-policies, transitions = seg.fit(full_traj, learning_rate=0.01, max_iters=10, max_liters=1)
-
-#seg.fitTraj(full_traj[0], learning_rate=0.3, max_iters=10)
+m.fit(full_traj)
 
 g = GridWorldEnv(copy.copy(gmap), noise=0.0)
-g.generateRandomStartGoal()
 
-#g.visualizePlan(full_traj, blank=True)
-
-#Visualization Code
-for i,p in enumerate(seg.policies):
+for i in enumerate(m.k):
     states = g.getAllStates()
     policy_hash = {}
     trans_hash = {}
@@ -71,19 +67,41 @@ for i,p in enumerate(seg.policies):
         ns[2:4] = s#np.argwhere(g.map == g.GOAL)[0]
         ns[4:6] = s#np.argwhere(g.map == g.START)[0]
 
-        if seg.transitions[i].visited(ns):
+        action = np.argmax(p.eval(np.array(ns)))
 
-            action = np.argmax(p.eval(np.array(ns)))
+        #if p.eval(np.array(ns))[action] > .5: 
+        policy_hash[s] = action
 
-            if p.eval(np.array(ns))[action] > .4: 
-                policy_hash[s] = action
-
-            #print(transitions[i].eval(np.array(ns)))
-            trans_hash[s] = seg.transitions[i].eval(np.array(ns))
+        #print(transitions[i].eval(np.array(ns)))
+        trans_hash[s] = seg.transitions[i].eval(np.array(ns))
 
     g.visualizePolicy(policy_hash, trans_hash, blank=True)
 
+#m.fit()
 
+#g = GridWorldEnv(copy.copy(gmap), noise=0.0)
+#g.visualizePlan(vis_traj,blank=True)
+
+
+
+
+"""
+seg = JointSegCentroidInferenceDiscrete(TabularModel, TabularModel, 2, 6, 4)
+#s.fit(full_traj)
+
+policies, transitions = seg.fit(full_traj, learning_rate=0.01, max_iters=30, max_liters=1)
+
+#seg.fitTraj(full_traj[0], learning_rate=0.3, max_iters=10)
+
+
+g = GridWorldEnv(copy.copy(gmap), noise=0.0)
+g.generateRandomStartGoal()
+
+#g.visualizePlan(full_traj, blank=True)
+
+#Visualization Code
+
+"""
 
 """
 

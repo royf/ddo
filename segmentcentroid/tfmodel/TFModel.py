@@ -1,4 +1,5 @@
 import tensorflow as tf
+#from tensorflow.train import GradientDescentOptimizer
 import numpy as np
 from segmentcentroid.inference.forwardbackward import ForwardBackward
 
@@ -64,6 +65,12 @@ class TFModel(object):
         raise NotImplemented("Must implement an _evalpsi function")
 
 
+    #returns a tensfor flow loss function, with a dict of all the training 
+    #variables
+    def getLossFunction(self):
+        raise NotImplemented("Must implement a getLossFunction")
+
+
     """
     Fitting primitives
     """
@@ -80,6 +87,70 @@ class TFModel(object):
         """
 
         self.fb = ForwardBackward(self, **hmm_config)
-        print(self.fb.fit(X))
+
+        loss, pivars, psivars = self.getLossFunction()
+
+        opt = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+
+        train = opt.minimize(loss)
+
+        for it in range(10):
+            print("Iter", it)
+            weights = self.fb.fit(X)
+            for i in range(len(X)):
+                feed_dict = {}
+                
+                Xm, Am = self.formatTrajectory(X[i])
+
+                for j in range(self.k):
+
+                    #print(weights[i][0][:,j], weights[i][1][:,j])
+
+                    feed_dict[pivars[j][0]] = Xm
+                    feed_dict[pivars[j][1]] = Am
+                    feed_dict[pivars[j][2]] = np.reshape(weights[i][0][:,j], (Xm.shape[0],1))
+
+                    feed_dict[psivars[j][0]] = Xm
+                    feed_dict[psivars[j][1]] = self.formatTransitions(weights[i][2][:,j])
+                    feed_dict[psivars[j][2]] = np.reshape(weights[i][1][:,j], (Xm.shape[0],1)) 
+
+                self.sess.run(train, feed_dict)
+
+
+    #helper method that formats the trajectory
+    def formatTrajectory(self, trajectory):
+
+        if self.statedim[1] != 1:
+            raise NotImplemented("Currently doesn't support more complex trajectories")
+
+        if self.actiondim[1] != 1:
+            raise NotImplemented("Currently doesn't support more complex trajectories")
+
+        sdim = self.statedim[0]
+        adim = self.actiondim[0]
+
+        X = np.zeros((len(trajectory),sdim))
+        A = np.zeros((len(trajectory),adim))
+
+        for t in range(len(trajectory)):
+            s = np.transpose(np.reshape(trajectory[t][0], self.statedim))
+            a = np.transpose(np.reshape(trajectory[t][1], self.actiondim))
+
+            X[t,:] = s
+            A[t,:] = a
+
+        return X,A
+
+    #helper method that formats the transitions
+    def formatTransitions(self, transitions):
+        X = np.zeros((len(transitions),2))
+        for t in range(len(transitions)):
+            X[t,0] = 1- transitions[t]
+            X[t,1] = transitions[t]
+        return X
+
+
+
+
 
         

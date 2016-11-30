@@ -37,18 +37,29 @@ class MLSoftMaxModel(TFModel):
         #must be one-hot encoded
         a = tf.placeholder(tf.float32, shape=[None, adim])
 
+        #must be a scalar
+        weight = tf.placeholder(tf.float32, shape=[None, 1])
+
         W_h1 = tf.Variable(tf.random_normal([sdim, self.hidden_layer]))
         b_1 = tf.Variable(tf.random_normal([self.hidden_layer]))
         h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
 
         W_out = tf.Variable(tf.random_normal([self.hidden_layer, adim]))
         b_out = tf.Variable(tf.random_normal([adim]))
-        y = tf.nn.softmax(tf.matmul(h1, W_out) + b_out)
+        
+        logit = tf.matmul(h1, W_out) + b_out
+        y = tf.nn.softmax(logit)
 
-        logprob = tf.reduce_sum(a * tf.log(y), 1)
+        logprob = -tf.log(tf.reduce_sum(y*a))
 
-        return x, a, y, logprob
-
+        wlogprob = weight*logprob
+        
+        return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob}
 
     def createTransitionNetwork(self):
 
@@ -63,17 +74,50 @@ class MLSoftMaxModel(TFModel):
         #must be one-hot encoded
         a = tf.placeholder(tf.float32, shape=[None, adim])
 
+        #must be a scalar
+        weight = tf.placeholder(tf.float32, shape=[None, 1])
+
         W_h1 = tf.Variable(tf.random_normal([sdim, self.hidden_layer]))
         b_1 = tf.Variable(tf.random_normal([self.hidden_layer]))
         h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
 
         W_out = tf.Variable(tf.random_normal([self.hidden_layer, adim]))
         b_out = tf.Variable(tf.random_normal([adim]))
-        y = tf.nn.softmax(tf.matmul(h1, W_out) + b_out)
+        logit = tf.matmul(h1, W_out) + b_out
 
-        logprob = tf.reduce_sum(a * tf.log(y), 1)
+        y = tf.nn.softmax(logit)
+        logprob = -tf.log(tf.reduce_sum(y*a))
 
-        return x, a, y, logprob
+        wlogprob = weight*logprob
+        
+        return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob}
+
+
+    def getLossFunction(self):
+
+        loss_array = []
+
+        pi_vars = []
+        for i in range(0, self.k):
+            loss_array.append(self.policy_networks[i]['wlprob'])
+            pi_vars.append((self.policy_networks[i]['state'], 
+                            self.policy_networks[i]['action'], 
+                            self.policy_networks[i]['weight']))
+
+        psi_vars = []
+        for i in range(0, self.k):
+            loss_array.append(self.transition_networks[i]['wlprob'])
+            psi_vars.append((self.transition_networks[i]['state'], 
+                            self.transition_networks[i]['action'], 
+                            self.transition_networks[i]['weight']))
+
+        return tf.reduce_sum(loss_array), pi_vars, psi_vars
+
 
 
     def initialize(self):
@@ -88,14 +132,37 @@ class MLSoftMaxModel(TFModel):
 
     #returns a probability distribution over actions
     def _evalpi(self, index, s, a):
-        feed_dict = {self.policy_networks[index][0]: s.reshape((1, self.statedim[0]))}
+        feed_dict = {self.policy_networks[index]['state']: s.reshape((1, self.statedim[0]))}
         encoded_action = np.argwhere(a > 0)[0][0]
-        dist = np.ravel(self.sess.run(self.policy_networks[index][2], feed_dict))
-        return dist[encoded_action]
+        dist = np.ravel(self.sess.run(self.policy_networks[index]['prob'], feed_dict))
+        
+        if np.isnan(dist[0]):
+            print(dist,s, a, self.sess.run(self.policy_networks[index]['prob'], feed_dict))
+
+            for v in tf.trainable_variables():
+                print("Dumping variables")
+                print(v, self.sess.run(v))
+
+            raise ValueError("Error!!!")
+
+        #print(s, np.sum(dist), dist)
+
+        #if np.sum(dist) == 0:
+        #    print("clip")
+        #    dist = np.ones(dist.shape)
+
+        return dist[encoded_action]/np.sum(dist)
 
     #returns a probability distribution over actions
     def _evalpsi(self, index, s):
-        feed_dict = {self.transition_networks[index][0]: s.reshape((1, self.statedim[0]))}
+        feed_dict = {self.transition_networks[index]['state']: s.reshape((1, self.statedim[0]))}
         encoded_action = 1
-        dist = np.ravel(self.sess.run(self.transition_networks[index][2], feed_dict))
-        return dist[encoded_action]
+        dist = np.ravel(self.sess.run(self.transition_networks[index]['prob'], feed_dict))
+        
+        #print(s, np.sum(dist), dist)
+
+        #if np.sum(dist) == 0:
+        #    print("clip")
+        #    dist = np.ones(dist.shape)
+
+        return dist[encoded_action]/np.sum(dist)
