@@ -1,28 +1,20 @@
 #!/usr/bin/env python
 
 from segmentcentroid.envs.GridWorldEnv import GridWorldEnv
-from segmentcentroid.planner.mcts import MCTS
-from segmentcentroid.models.TabularModel import TabularModel
-from segmentcentroid.models.LimitedTabularModel import LimitedTabularModel
-
-from segmentcentroid.models.LogitModel import LogitModel, BinaryLogitModel
-
 from segmentcentroid.tfmodel.MLSoftMaxModel import MLSoftMaxModel
-
-from segmentcentroid.models.ForestModel import ForestModel
-
 from segmentcentroid.planner.value_iteration import ValueIterationPlanner
-from segmentcentroid.inference.seginference2 import JointSegCentroidInferenceDiscrete
 from segmentcentroid.planner.traj_utils import *
 
 import numpy as np
 import copy
 
+import tensorflow as tf
+
 """
 This example demonstrates a proof of concept for manual segmentation
 """
 
-m  = MLSoftMaxModel((6,1), (4,1), 2)
+m  = MLSoftMaxModel((6,1), (4,1), 4)
 
 #first we load the gridworld map and initialize the environment
 MAP_NAME = 'resources/GridWorldMaps/Roundabout.txt'
@@ -30,7 +22,7 @@ gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
 full_traj = []
 vis_traj = []
 
-for i in range(0,2):
+for i in range(0,100):
     g = GridWorldEnv(copy.copy(gmap), noise=0.0)
     g.generateRandomStartGoal()
     v = ValueIterationPlanner(g)
@@ -40,7 +32,7 @@ for i in range(0,2):
     for t in traj:
         ns = np.ndarray(shape=(6))
         ns[0:2] = t[0]
-        ns[2:4] = t[0]#np.argwhere(g.map == g.GOAL)[0]
+        ns[2:4] = t[0]
         ns[4:6] = t[0]#np.argwhere(g.map == g.START)[0]
 
         a = np.zeros(shape=(4,1))
@@ -53,7 +45,18 @@ for i in range(0,2):
 
 g.visualizePlan(vis_traj,blank=True)
 
-m.fit(full_traj)
+
+opt = tf.train.AdamOptimizer(learning_rate=1e-4)
+train = opt.minimize(m.getLossFunction()[0])
+init = tf.initialize_all_variables()
+
+#with m.sess as sess:
+m.sess.run(init)
+
+for it in range(500):
+    print("Iteration",it)
+    m.sess.run(train, m.sampleBatch(full_traj))
+
 
 actions = np.eye(4)
 
@@ -69,19 +72,21 @@ for i in range(m.k):
         
         ns = np.ndarray(shape=(6))
         ns[0:2] = s
-        ns[2:4] = s#np.argwhere(g.map == g.GOAL)[0]
+        ns[2:4] = s
         ns[4:6] = s#np.argwhere(g.map == g.START)[0]
 
         #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-        action = np.argmax([m.evalpi(i,ns, actions[j,:]) for j in range(4)])
+        l = [m.evalpi(i,ns, actions[j,:]) for j in range(4)]
 
-        #if p.eval(np.array(ns))[action] > .5: 
+        print(i, s,l, m.evalpsi(i,ns))
+        action = np.argmax(l)
+
         policy_hash[s] = action
 
         #print(transitions[i].eval(np.array(ns)))
-        trans_hash[s] = 0#m.evalpsi(i,ns)
+        trans_hash[s] = m.evalpsi(i,ns)
 
-    g.visualizePolicy(policy_hash, trans_hash, blank=True)
+    g.visualizePolicy(policy_hash, trans_hash)
 
 
 #m.fit()

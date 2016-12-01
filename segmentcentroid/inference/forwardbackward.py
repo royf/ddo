@@ -29,10 +29,10 @@ class ForwardBackward(object):
         self.X = None
         self.Q = None
         self.B = None
-        self.T = None
 
         self.P = np.ones((self.k, self.k))/self.k
 
+        self.Pbar = np.ones((self.k, self.k))/2
 
     def fit(self, trajectoryList):
         """
@@ -68,15 +68,7 @@ class ForwardBackward(object):
         self.Q = np.ones((len(X)+1, self.k))/self.k
         self.fq = np.ones((len(X)+1, self.k))/self.k
         self.bq = np.ones((len(X)+1, self.k))/self.k
-
-        #uniform probability of next timestep terminating
         self.B = np.ones((len(X)+1, self.k))/2
-
-        self.T = np.zeros((len(X), self.k))
-
-        #uniform transition probabilities
-        self.P = np.ones((self.k, self.k))/self.k
-
 
 
     def fitTraj(self, X):
@@ -96,22 +88,23 @@ class ForwardBackward(object):
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
         #if self.verbose:
-        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1))            
+        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1)) 
+
+        self.updateTransitionProbability()      
+
+        print("[HC: Forward-Backward] P Update", self.P)      
 
         for t in range(len(self.X)-1):
             self.B[t,:] = np.exp(self.termination(t))
 
+        #print("BB",self.B)
         self.B = normalize(self.B, norm='l1', axis=1)
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
 
 
-        for t in range(len(self.X)):
-            for i in range(self.k):
-                self.T[t,i] = self._pi_term_giv_s(X[t][0],i)
-
-        return self.Q[0:len(X),:], self.B[0:len(X),:], self.T
+        return self.Q[0:len(X),:], self.B[0:len(X),:], self.P
 
 
     def forward(self):
@@ -228,6 +221,18 @@ class ForwardBackward(object):
 
 
         return [termination[h] for h in range(self.k)]
+
+
+    def updateTransitionProbability(self):
+
+        for t in range(len(self.X)-1):
+            qt = self.Q[t,:]
+            qtp = self.Q[t+1,:]
+            for i in range(self.k):
+                for j in range(self.k):
+                    self.Pbar[i,j] = self.Pbar[i,j] + qt[i]*qtp[j]
+
+        self.P = normalize(self.Pbar, norm='l1', axis=0)
 
 
     def _pi_a_giv_s(self, s, a, index):

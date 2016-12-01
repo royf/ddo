@@ -260,12 +260,12 @@ class GridWorldEnv(AbstractEnv):
 
             action = self.ACTIONS[policy[state]]
 
-            alpha = 1 - transitions[state]
+            alpha = transitions[state]
 
             dx = action[0]*0.5
             dy = action[1]*0.5
 
-            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(0,0,0,alpha), ec=(0,0,0,alpha))
+            ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(alpha,0,0), ec=(alpha,0,0))
 
 
         plt.show()

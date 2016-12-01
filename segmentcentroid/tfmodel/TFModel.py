@@ -24,6 +24,7 @@ class TFModel(object):
         self.sess = tf.Session()
 
         self.initialize()
+        self.fb = ForwardBackward(self)
 
 
     def initialize(self):
@@ -75,49 +76,26 @@ class TFModel(object):
     Fitting primitives
     """
 
-    def fit(self, 
-            X, 
-            hmm_config={}, 
-            gd_config={}):
-        """
-        X is a list of trajectories
-        hmm_config is config that goes to the forward 
-        backward algorithm
-        gd config is config that goes to tensorflow
-        """
-
-        self.fb = ForwardBackward(self, **hmm_config)
-
+    #samples one stochastic gradient batch
+    def sampleBatch(self, X):
         loss, pivars, psivars = self.getLossFunction()
+        traj_index = np.random.choice(len(X))
+        weights = self.fb.fit([X[traj_index]])
+        feed_dict = {}
+        Xm, Am = self.formatTrajectory(X[traj_index])
 
-        opt = tf.train.GradientDescentOptimizer(learning_rate=1e-6)
+        for j in range(self.k):
+            feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
+            feed_dict[pivars[j][2]] = np.reshape(weights[0][0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
-        train = opt.minimize(loss)
+            feed_dict[psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[psivars[j][1]] = self.formatTransitions(weights[0][1][:,j])[1:len(X[traj_index])-1,:]
+            feed_dict[psivars[j][2]] = np.reshape(weights[0][1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
-        for it in range(100):
-            print("Iter", it)
-            weights = self.fb.fit(X)
-            for i in range(len(X)):
-                feed_dict = {}
-                
-                Xm, Am = self.formatTrajectory(X[i])
+        return feed_dict
 
-                for j in range(self.k):
-
-                    #print(weights[i][0][:,j], weights[i][1][:,j])
-
-                    feed_dict[pivars[j][0]] = Xm
-                    feed_dict[pivars[j][1]] = Am
-                    feed_dict[pivars[j][2]] = np.reshape(weights[i][0][:,j], (Xm.shape[0],1))
-
-                    feed_dict[psivars[j][0]] = Xm
-                    feed_dict[psivars[j][1]] = self.formatTransitions(weights[i][2][:,j])
-                    feed_dict[psivars[j][2]] = np.reshape(weights[i][1][:,j], (Xm.shape[0],1)) 
-
-                self.sess.run(train, feed_dict)
-                print(self.sess.run(loss, feed_dict))
-
-
+        
     #helper method that formats the trajectory
     def formatTrajectory(self, trajectory):
 
@@ -145,9 +123,10 @@ class TFModel(object):
     #helper method that formats the transitions
     def formatTransitions(self, transitions):
         X = np.zeros((len(transitions),2))
-        for t in range(len(transitions)):
+        for t in range(len(transitions)-1):
             X[t,0] = 1- transitions[t]
             X[t,1] = transitions[t]
+        
         return X
 
 

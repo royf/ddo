@@ -128,9 +128,6 @@ class MLSoftMaxModel(TFModel):
         for i in range(0, self.k):
             self.transition_networks.append(self.createTransitionNetwork())
 
-        self.sess.run(tf.initialize_all_variables())
-
-
     #returns a probability distribution over actions
     def _evalpi(self, index, s, a):
         feed_dict = {self.policy_networks[index]['state']: s.reshape((1, self.statedim[0]))}
