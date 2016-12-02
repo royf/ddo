@@ -229,7 +229,7 @@ class GridWorldEnv(AbstractEnv):
 
 
     ###visualization routines
-    def visualizePolicy(self, policy, transitions=None, blank=False):
+    def visualizePolicy(self, policy, transitions=None, blank=False, filename=None):
         cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
 
         plt.figure()
@@ -268,10 +268,13 @@ class GridWorldEnv(AbstractEnv):
             ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=(alpha,0,0), ec=(alpha,0,0))
 
 
-        plt.show()
+        if filename == None:
+            plt.show()
+        else:
+            plt.savefig(filename)
 
 
-    def visualizePlan(self, plan, blank=False):
+    def visualizePlan(self, plan, blank=False, filename=None):
         cmap = colors.ListedColormap(['w', '.75', 'b', 'g', 'r', 'k'], 'GridWorld')
 
         plt.figure()
@@ -308,7 +311,10 @@ class GridWorldEnv(AbstractEnv):
             dy = action[0,1]*0.5
             ax.arrow(state[1], state[0], dy, dx, head_width=0.1, fc=c, ec=c)
 
-        plt.show()
+        if filename == None:
+            plt.show()
+        else:
+            plt.savefig(filename)
 
 
 
