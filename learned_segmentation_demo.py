@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from segmentcentroid.envs.GridWorldEnv import GridWorldEnv
-from segmentcentroid.tfmodel.MLSoftMaxModel import MLSoftMaxModel
+from segmentcentroid.tfmodel.GridWorldSoftMaxModel import GridWorldSoftMaxModel
 from segmentcentroid.planner.value_iteration import ValueIterationPlanner
 from segmentcentroid.planner.traj_utils import *
 
@@ -14,7 +14,7 @@ import tensorflow as tf
 This example demonstrates a proof of concept for manual segmentation
 """
 
-m  = MLSoftMaxModel((6,1), (4,1), 4)
+m  = GridWorldSoftMaxModel((6,1), (4,1), 2)
 
 #first we load the gridworld map and initialize the environment
 MAP_NAME = 'resources/GridWorldMaps/Roundabout.txt'
@@ -22,8 +22,9 @@ gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
 full_traj = []
 vis_traj = []
 
-for i in range(0,100):
-    g = GridWorldEnv(copy.copy(gmap), noise=0.0)
+for i in range(0,10):
+    print("Traj",i)
+    g = GridWorldEnv(copy.copy(gmap), noise=0.1)
     g.generateRandomStartGoal()
     v = ValueIterationPlanner(g)
     traj = v.plan(max_depth=100)
@@ -46,16 +47,20 @@ for i in range(0,100):
 g.visualizePlan(vis_traj,blank=True)
 
 
-opt = tf.train.AdamOptimizer(learning_rate=1e-4)
-train = opt.minimize(m.getLossFunction()[0])
+opt = tf.train.AdamOptimizer(learning_rate=1e-3)
+loss = m.getLossFunction()[0]
+train = opt.minimize(loss)
 init = tf.initialize_all_variables()
 
 #with m.sess as sess:
 m.sess.run(init)
 
-for it in range(500):
+for it in range(100):
     print("Iteration",it)
-    m.sess.run(train, m.sampleBatch(full_traj))
+    batch = m.sampleBatch(full_traj)
+    for i in range(1000):
+        m.sess.run(train, batch)
+        #print("Loss", m.sess.run(loss, batch))
 
 
 actions = np.eye(4)
@@ -76,10 +81,13 @@ for i in range(m.k):
         ns[4:6] = s#np.argwhere(g.map == g.START)[0]
 
         #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-        l = [m.evalpi(i,ns, actions[j,:]) for j in range(4)]
+        l = [m.evalpi(i,ns, actions[j,:]) for j in g.possibleActions(s)]
 
-        print(i, s,l, m.evalpsi(i,ns))
-        action = np.argmax(l)
+        if len(l) == 0:
+            continue
+
+        #print(i, s,l, m.evalpsi(i,ns))
+        action = g.possibleActions(s)[np.argmax(l)]
 
         policy_hash[s] = action
 

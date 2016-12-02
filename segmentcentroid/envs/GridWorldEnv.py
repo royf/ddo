@@ -36,10 +36,10 @@ class GridWorldEnv(AbstractEnv):
             [[0, self.ROWS - 1], [0, self.COLS - 1]])
         self.NOISE = noise
 
-        if random_start:
-            self.generateRandomStartGoal()
+        #if random_start:
+        #    self.generateRandomStartGoal()
 
-        print(self.start_state, np.argwhere(self.map == self.GOAL)[0])
+        #print(self.start_state, np.argwhere(self.map == self.GOAL)[0])
 
         super(GridWorldEnv, self).__init__()
 

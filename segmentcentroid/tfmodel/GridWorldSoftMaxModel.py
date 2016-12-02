@@ -2,7 +2,7 @@ from .TFModel import TFModel
 import tensorflow as tf
 import numpy as np
 
-class MLSoftMaxModel(TFModel):
+class GridWorldSoftMaxModel(TFModel):
     
     """
     This class defines the abstract class for a tensorflow model for the primitives.
@@ -12,13 +12,18 @@ class MLSoftMaxModel(TFModel):
                  statedim, 
                  actiondim, 
                  k,
-                 hidden_layer=512):
+                 hidden_layer=32,
+                 init_scale=20,
+                 init_var=5):
 
         self.hidden_layer = hidden_layer
+        self.init_var = init_var
+        self.init_scale = init_scale
+
         self.policy_networks = []
         self.transition_networks = []
         
-        super(MLSoftMaxModel, self).__init__(statedim, actiondim, k)
+        super(GridWorldSoftMaxModel, self).__init__(statedim, actiondim, k)
 
 
     def createPolicyNetwork(self):
@@ -66,8 +71,11 @@ class MLSoftMaxModel(TFModel):
         if self.statedim[1] != 1:
             raise ValueError("MLSoftMaxModels only apply to vector valued state-spaces")
 
+        if self.actiondim[1] != 1:
+            raise ValueError("MLSoftMaxModels only apply to vector valued (1 hot encoded) action-spaces")
+
         sdim = self.statedim[0]
-        adim = 2 #binary
+        adim = 2
 
         x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -83,8 +91,8 @@ class MLSoftMaxModel(TFModel):
 
         W_out = tf.Variable(tf.random_normal([self.hidden_layer, adim]))
         b_out = tf.Variable(tf.random_normal([adim]))
+        
         logit = tf.matmul(h1, W_out) + b_out
-
         y = tf.nn.softmax(logit)
 
         logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
@@ -97,6 +105,43 @@ class MLSoftMaxModel(TFModel):
                 'prob': y, 
                 'lprob': logprob,
                 'wlprob': wlogprob}
+
+    """
+    def createTransitionNetwork(self):
+
+        if self.statedim[1] != 1:
+            raise ValueError("MLSoftMaxModels only apply to vector valued state-spaces")
+
+        sdim = self.statedim[0]
+        adim = 2 #binary
+
+        x = tf.placeholder(tf.float32, shape=[None, sdim])
+
+        #must be one-hot encoded
+        a = tf.placeholder(tf.float32, shape=[None, adim])
+
+        #must be a scalar
+        weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+        
+        mu = self.init_scale*tf.Variable(tf.random_uniform([1,sdim]))
+        N= tf.shape(x)
+        MU = tf.tile(mu, [N[0],1])
+
+        y = [1-tf.exp(-tf.reduce_sum( tf.abs(x-MU), 1)/self.init_var), tf.exp(-tf.reduce_sum( tf.abs(x-MU), 1)/self.init_var)]
+
+        logprob = tf.nn.softmax_cross_entropy_with_logits(tf.transpose(y), a)
+
+        wlogprob = weight*logprob
+        
+        return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'mu':mu,
+                'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob}
+    """
 
 
     def getLossFunction(self):
@@ -157,6 +202,9 @@ class MLSoftMaxModel(TFModel):
         feed_dict = {self.transition_networks[index]['state']: s.reshape((1, self.statedim[0]))}
         encoded_action = 1
         dist = np.ravel(self.sess.run(self.transition_networks[index]['prob'], feed_dict))
+        #print("###",dist, index)
+
+        #print("###",self.sess.run(self.transition_networks[index]['mu']))
         
         #print(s, np.sum(dist), dist)
 

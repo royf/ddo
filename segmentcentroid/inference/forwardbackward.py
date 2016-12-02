@@ -85,6 +85,9 @@ class ForwardBackward(object):
         self.backward()
 
         self.Q = np.exp(np.add(self.fq,self.bq))
+        
+        self.Qnorm = np.sum(self.Q, axis=1)
+
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
         #if self.verbose:
@@ -94,11 +97,11 @@ class ForwardBackward(object):
 
         print("[HC: Forward-Backward] P Update", self.P)      
 
-        for t in range(len(self.X)-1):
-            self.B[t,:] = np.exp(self.termination(t))
+        for t in range(len(self.X)):
+            self.B[t,:] = np.exp(self.termination(t))/self.Qnorm[t]
 
-        #print("BB",self.B)
-        self.B = normalize(self.B, norm='l1', axis=1)
+        print("###",self.B)
+        #self.B = normalize(self.B, norm='l1', axis=1)
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
