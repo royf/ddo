@@ -11,9 +11,9 @@ import copy
 import tensorflow as tf
 
 
-def runPolicies(demonstrations=20,
+def runPolicies(demonstrations=10,
         super_iterations=100,
-        sub_iterations=200,
+        sub_iterations=1000,
         learning_rate=1e-3,
         env_noise=0.1):
 

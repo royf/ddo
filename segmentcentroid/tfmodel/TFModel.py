@@ -95,6 +95,26 @@ class TFModel(object):
 
         return feed_dict
 
+    #samples one stochastic gradient batch
+    def samplePretrainBatch(self, X):
+        loss, pivars, psivars = self.getLossFunction()
+        traj_index = np.random.choice(len(X))
+        weights = self.fb.randomWeights([X[traj_index]])
+        #print(weights[0][1])
+        feed_dict = {}
+        Xm, Am = self.formatTrajectory(X[traj_index])
+
+        for j in range(self.k):
+            feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
+            feed_dict[pivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+
+            feed_dict[psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[psivars[j][1]] = self.formatTransitions(weights[1][:,j])[1:len(X[traj_index])-1,:]
+            feed_dict[psivars[j][2]] = np.reshape(weights[1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+
+        return feed_dict
+
         
     #helper method that formats the trajectory
     def formatTrajectory(self, trajectory):

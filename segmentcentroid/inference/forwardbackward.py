@@ -85,22 +85,32 @@ class ForwardBackward(object):
         self.backward()
 
         self.Q = np.exp(np.add(self.fq,self.bq))
+
+        #self.Q[np.all(self.Q == 0, axis=1)] = 1e-32
+
+        #print(self.Q)
         
         self.Qnorm = np.sum(self.Q, axis=1)
 
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
+        #print(self.Q)
+
         #if self.verbose:
-        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1)) 
+        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
         self.updateTransitionProbability()      
 
-        print("[HC: Forward-Backward] P Update", self.P)      
 
         for t in range(len(self.X)):
-            self.B[t,:] = np.exp(self.termination(t))/self.Qnorm[t]
+            update = np.exp(self.termination(t))/self.Qnorm[t]
+            if not np.isnan(update[0]):
+                self.B[t,:] = update #np.exp(self.termination(t))/self.Qnorm[t]
+            else:
+                self.B[t,:] = np.random.rand(1,self.k)
 
-        print("###",self.B)
+        #print("###",self.B)
+
         #self.B = normalize(self.B, norm='l1', axis=1)
 
         if self.verbose:
@@ -108,6 +118,26 @@ class ForwardBackward(object):
 
 
         return self.Q[0:len(X),:], self.B[0:len(X),:], self.P
+
+
+    def randomWeights(self, X):
+
+        self.init_iter(0, X[0])
+
+        self.X = X[0]
+
+        self.Q = np.random.rand(len(self.X),self.k)
+      
+        self.Qnorm = np.sum(self.Q, axis=1)
+
+        self.Q = normalize(self.Q, norm='l1', axis=1)   
+
+        for t in range(len(self.X)):
+            self.B[t,:] = np.random.rand(1,self.k)
+
+
+        return self.Q[0:len(self.X),:], self.B[0:len(self.X),:]
+                
 
 
     def forward(self):
@@ -145,7 +175,6 @@ class ForwardBackward(object):
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
-
 
     def backward(self):
         """
