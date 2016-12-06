@@ -91,8 +91,6 @@ class ForwardBackward(object):
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
         
-
-        #if self.verbose:
         print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
         self.updateTransitionProbability()      
@@ -113,6 +111,9 @@ class ForwardBackward(object):
 
 
     def randomWeights(self, X):
+        """
+        This returns a dummy object back with random weights used for pretraining
+        """
 
         self.init_iter(0, X[0])
 
@@ -245,6 +246,9 @@ class ForwardBackward(object):
 
 
     def updateTransitionProbability(self):
+        """
+        Updates the transition probabilities P
+        """
 
         for t in range(len(self.X)-1):
             qt = self.Q[t,:]

@@ -1,7 +1,34 @@
 import tensorflow as tf
 
+"""
+This file is meant to be a model-zoo like file that creates 
+networks that can be used in other parts of the pipeline. These
+networks are tensorflow references and need to expose the following API.
+
+{ 
+'state': <reference to the state placeholder>
+'action': <reference to the action placeholder>
+'weight': <reference to the weight placeholder>
+'prob': <reference to a variable that calculates the probability of action given state>
+'wlprob': <reference to a variable that calculates the weighted log probability> 
+'discrete': <True/False describing whether the action space should be one-hot encoded>   
+}
+"""
+
 
 def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
+    """
+    This function creates a regression network that takes states and
+    regresses to actions. It is based on a gated relu.
+
+    Positional arguments:
+    sdim -- int dimensionality of the state-space
+    adim -- int dimensionality of the action-space
+    variance -- float scaling for the probability calculation
+    
+    Keyword arguments:
+    hidden_later -- int size of the hidden layer
+    """
 
     x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -37,8 +64,15 @@ def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
 
 
 
-def logisticRegression(sdim, 
-                       adim):
+def logisticRegression(sdim, adim):
+
+    """
+    This function creates a multinomial logistic regression
+
+    Positional arguments:
+    sdim -- int dimensionality of the state-space
+    adim -- int dimensionality of the action-space
+    """
 
     x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -68,6 +102,17 @@ def logisticRegression(sdim,
 def multiLayerPerceptron(sdim, 
                          adim, 
                          hidden_layer=64):
+    """
+    This function creates a classification network that takes states and
+    predicts a hot-one encoded action. It is based on a MLP.
+
+    Positional arguments:
+    sdim -- int dimensionality of the state-space
+    adim -- int dimensionality of the action-space
+    
+    Keyword arguments:
+    hidden_later -- int size of the hidden layer
+    """
 
         x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -101,6 +146,18 @@ def multiLayerPerceptron(sdim,
 
 
 def gaussianMean(sdim, adim, variance, scale):
+
+        """
+        This function creates creates a gaussian ellipsoid centered
+        at a mean
+
+        Positional arguments:
+        sdim -- int dimensionality of the state-space
+        adim -- int dimensionality of the action-space
+        variance -- float scaling for the probability calculation
+        scale -- float the scaling for the initialization
+
+        """
 
         if adim != 2:
             raise ValueError("Gaussian only apply to binary")
