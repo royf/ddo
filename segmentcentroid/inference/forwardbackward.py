@@ -14,8 +14,12 @@ class ForwardBackward(object):
 
     def __init__(self, model, verbose=False):
         """
-        model: This is a model object which is a wrapper for a tensorflow model
-        verbose: True means that FB algorithm will print logging output to stdout
+        This initializes the FB algorithm with a TFmodel
+
+        Positional arguments:
+
+        model -- TFModel This is a model object which is a wrapper for a tensorflow model
+        verbose -- Boolean True means that FB algorithm will print logging output to stdout
         """
 
         self.verbose = verbose
@@ -34,13 +38,18 @@ class ForwardBackward(object):
 
         self.Pbar = np.ones((self.k, self.k))/2
 
+
     def fit(self, trajectoryList):
         """
         Each trajectory is a sequence of tuple (s,a) where both s and a are numpy
         arrays. 
-        trajectoryList: is a list of trajectories.
 
-        Returns a dict of trajectory id and the tables
+        Positional arguments:
+
+        trajectoryList -- is a list of trajectories.
+
+        Returns:
+        A dict of trajectory id which mapt to the the weights Q, B, P
         """
 
         iter_state = {}
@@ -63,6 +72,10 @@ class ForwardBackward(object):
     def init_iter(self,index, X):
         """
         Internal method that initializes the state variables
+
+        Positional arguments:
+        index -- int trajectory id
+        X -- trajectory
         """
 
         self.Q = np.ones((len(X)+1, self.k))/self.k
@@ -75,8 +88,13 @@ class ForwardBackward(object):
         """
         This function runs one pass of the Forward Backward algorithm over
         a trajectory.
-        X is a list of s,a tuples.
-        Returns two tables Q, B which define the weights for the gradient step
+
+        Positional arguments:
+
+        X -- is a list of s,a tuples.
+
+        Return:
+        Two tables of weights Q, B which define the weights for the gradient step
         """
 
         self.X = X
@@ -91,7 +109,7 @@ class ForwardBackward(object):
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
         
-        print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
+        #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
         self.updateTransitionProbability()      
 
@@ -113,6 +131,11 @@ class ForwardBackward(object):
     def randomWeights(self, X):
         """
         This returns a dummy object back with random weights used for pretraining
+
+        Positional arguments:
+
+        X -- is a list of s,a tuples.
+        
         """
 
         self.init_iter(0, X[0])

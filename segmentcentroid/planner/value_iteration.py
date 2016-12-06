@@ -3,16 +3,20 @@ from .AbstractPlanner import *
 
 """
 This class defines a general value iteration technique in
-discrete state-spaces.
+discrete state-spaces and action spaces.
 """
 
 class ValueIteration(object):
 
-    """
-    Pass in an iterable of states, actions, dynamics_model, reward_function
-    """
-
     def __init__(self, state_list, action_list, dynamics_model, reward_function):
+        """
+        Pass in an iterable of states, actions, dynamics_model, reward_function
+
+        Positional arguments:
+        state_list -- list of all feasible states
+        action_list -- list of all feasible actions
+        dynamics_model -- map from (state,action) to a list of (state, prob) tuples
+        """
         self.state_list = state_list
         self.action_list = action_list
         self.value_function = dict([(s,0) for s in state_list])
@@ -23,10 +27,14 @@ class ValueIteration(object):
 
 
     def fit(self, horizon=100):
-        for t in range(horizon):
-            
-            #print(len([v for v in self.value_function if self.value_function[v] > 0]))
+        """
+        Runs value iteration.
 
+        Keyword arguments:
+        horizon -- int number of iterations
+        """
+
+        for t in range(horizon):
             self._one_step_bb()
 
 
@@ -35,6 +43,10 @@ class ValueIteration(object):
         return self.policy, self.value_function
 
     def _one_step_bb(self):
+        """
+        Performs one step of value iteration
+        """
+
         for state in self.value_function:
             vupdate, pupdate = self._argmaxa(state)
             self.value_function[state] = vupdate
@@ -42,6 +54,10 @@ class ValueIteration(object):
 
             
     def _expectation(self, state, action):
+        """
+        Cacluates the expected value at state, action
+        """
+
         total = 0
         for state_prob in self.dynamics_model[(state,action)]:
             
@@ -54,6 +70,9 @@ class ValueIteration(object):
         return total
 
     def _argmaxa(self, state):
+        """
+        Finds the action that maximizes value
+        """
 
         maxv = 0
         maxa = None
@@ -76,6 +95,10 @@ class ValueIteration(object):
         return maxv, maxa
 
 
+"""
+Wraps the value iteration routine into a 
+planner.
+"""
 
 class ValueIterationPlanner(AbstractPlanner):
 
