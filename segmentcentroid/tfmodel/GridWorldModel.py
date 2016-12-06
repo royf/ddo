@@ -10,9 +10,9 @@ class GridWorldModel(TFNetworkModel):
     """
 
     def __init__(self, 
-                 statedim, 
-                 actiondim, 
                  k,
+                 statedim=(2,1), 
+                 actiondim=(4,1), 
                  hidden_layer=32):
 
         self.hidden_layer = hidden_layer

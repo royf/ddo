@@ -17,7 +17,7 @@ def runPolicies(demonstrations=50,
         learning_rate=1e-3,
         env_noise=0.1):
 
-    m  = GridWorldModel((2,1), (4,1), 2)
+    m  = GridWorldModel(2)
 
     MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
     gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
@@ -46,19 +46,7 @@ def runPolicies(demonstrations=50,
 
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
-    loss = m.getLossFunction()[0]
-    train = opt.minimize(loss)
-    init = tf.initialize_all_variables()
-
-    #with m.sess as sess:
-    m.sess.run(init)
-
-    for it in range(super_iterations):
-        print("Iteration",it)
-        batch = m.sampleBatch(full_traj)
-        for i in range(sub_iterations):
-            m.sess.run(train, batch)
-
+    m.train(opt, full_traj, super_iterations, sub_iterations)
 
     actions = np.eye(4)
 

@@ -3,7 +3,6 @@ import numpy as np
 from segmentcentroid.inference.forwardbackward import ForwardBackward
 
 class TFModel(object):
-    
     """
     This class defines the abstract class for a tensorflow model for the primitives.
     """
@@ -11,7 +10,9 @@ class TFModel(object):
     def __init__(self, 
                  statedim, 
                  actiondim, 
-                 k):
+                 k,
+                 checkpoint_file='/tmp/model.bin',
+                 checkpoint_freq=10):
         """
         Defines the state-space and action-space and number of primitves
         """
@@ -21,13 +22,25 @@ class TFModel(object):
         self.k = k
         self.fb = None
         self.sess = tf.Session()
+        self.trained = False
+
+        self.checkpoint_file = checkpoint_file
+        self.checkpoint_freq = checkpoint_freq
 
         self.initialize()
         self.fb = ForwardBackward(self)
+        self.saver = tf.train.Saver()
 
 
     def initialize(self):
         raise NotImplemented("Must implement an initialize function")
+
+
+    def restore(self):
+        self.saver.restore(self.sess, self.checkpoint_file)
+
+    def save(self):
+        self.saver.save(self.sess, self.checkpoint_file)
 
     def evalpi(self, index, s, a):
         """
@@ -149,6 +162,44 @@ class TFModel(object):
         return X
 
 
+    def getOptimizationVariables(self, opt):
+        loss = self.getLossFunction()[0]
+        train = opt.minimize(loss)
+        init = tf.initialize_all_variables()
+        return (loss, train, init)
+
+
+    def pretrain(self, opt, X, iterations):
+        loss, train, init = self.getOptimizationVariables(opt)
+        
+        self.sess.run(init)
+        self.trained = True
+
+        for it in range(iterations):
+
+            if it % 100 == 0:
+                print("Pretrain Iteration=", it)
+
+            batch = self.samplePretrainBatch(X)
+            self.sess.run(train, batch)
+
+
+    def train(self, opt, X, iterations, subiterations):
+        loss, train, init = self.getOptimizationVariables(opt)
+
+        if not self.trained:
+            self.sess.run(init)
+
+        for it in range(iterations):
+
+            if it % self.checkpoint_freq == 0:
+                print("Checkpointing Train", it, self.checkpoint_file)
+                self.save()
+
+            batch = self.sampleBatch(X)
+            
+            for i in range(subiterations):
+                self.sess.run(train, batch)
 
 
 

@@ -9,10 +9,10 @@ class JHUJigSawsModel(TFNetworkModel):
     This class defines the abstract class for a tensorflow model for the primitives.
     """
 
-    def __init__(self, 
-                 statedim, 
-                 actiondim, 
+    def __init__(self,  
                  k,
+                 statedim=(37,1), 
+                 actiondim=(37,1),
                  hidden_layer=64,
                  variance=10000):
 
