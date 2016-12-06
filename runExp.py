@@ -18,7 +18,7 @@ from segmentcentroid.planner.jigsaws_loader import JigsawsPlanner
 
 j = JigsawsPlanner('/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/')
 full_traj = []
-for i in range(0,10):
+for i in range(0,20):
     full_traj.append(j.plan())
 
 sdim = 37
@@ -26,7 +26,7 @@ sdim = 37
 adim = 37
 
 from segmentcentroid.tfmodel.JHUJigSawsModel import JHUJigSawsModel
-m  = JHUJigSawsModel((sdim,1), (adim,1), 8)
+m  = JHUJigSawsModel((sdim,1), (adim,1), 4)
 
 
 opt = tf.train.AdamOptimizer(learning_rate=1e-2)
@@ -36,21 +36,20 @@ init = tf.initialize_all_variables()
 
 
 m.sess.run(init)
-batch = m.samplePretrainBatch(full_traj)
-for i in range(10000):
+for i in range(100):
+    batch = m.samplePretrainBatch(full_traj)
     m.sess.run(train, batch)
 
-    if i % 100 == 0:
-        print("Loss", m.sess.run(loss, batch))
 
-
-for it in range(100):
+for it in range(5):
     print("Iteration",it)
     batch = m.sampleBatch(full_traj)
-    for i in range(1000):
+    for i in range(1):
         m.sess.run(train, batch)
 
-j.visualizePlan(full_traj[0], segmentation=np.argmax(m.fb.Q, axis=1))
+for t in full_traj:
+    m.fb.fit([t])
+    j.visualizePlan(t, segmentation=np.argmax(m.fb.Q, axis=1))
 
 
 

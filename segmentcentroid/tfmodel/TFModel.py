@@ -80,6 +80,9 @@ class TFModel(object):
     def sampleBatch(self, X):
         loss, pivars, psivars = self.getLossFunction()
         traj_index = np.random.choice(len(X))
+        
+        print(traj_index)
+
         weights = self.fb.fit([X[traj_index]])
         feed_dict = {}
         Xm, Am = self.formatTrajectory(X[traj_index])

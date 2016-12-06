@@ -66,6 +66,7 @@ class JHUJigSawsModel(TFModel):
                 'lprob': logprob,
                 'wlprob': wlogprob}
 
+    """
     def createTransitionNetwork(self):
 
         if self.statedim[1] != 1:
@@ -73,6 +74,47 @@ class JHUJigSawsModel(TFModel):
 
         if self.actiondim[1] != 1:
             raise ValueError("JHUJigSawsModel only apply to vector valued action-spaces")
+
+        sdim = self.statedim[0]
+        adim = 2
+
+        x = tf.placeholder(tf.float32, shape=[None, sdim])
+
+        #must be one-hot encoded
+        a = tf.placeholder(tf.float32, shape=[None, adim])
+
+        #must be a scalar
+        weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+        W_h1 = tf.Variable(tf.random_normal([sdim, adim]))
+        b_1 = tf.Variable(tf.random_normal([adim]))
+        #h1 = tf.nn.sigmoid()
+
+        #W_out = tf.Variable(tf.random_normal([self.hidden_layer, adim]))
+        #b_out = tf.Variable(tf.random_normal([adim]))
+        
+        logit = tf.matmul(x, W_h1) + b_1
+        y = tf.nn.softmax(logit)
+
+        logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+
+        wlogprob = tf.transpose(tf.transpose(weight)*logprob)
+        
+        return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob}
+    """
+
+    def createTransitionNetwork(self):
+
+        if self.statedim[1] != 1:
+            raise ValueError("MLSoftMaxModels only apply to vector valued state-spaces")
+
+        if self.actiondim[1] != 1:
+            raise ValueError("MLSoftMaxModels only apply to vector valued (1 hot encoded) action-spaces")
 
         sdim = self.statedim[0]
         adim = 2

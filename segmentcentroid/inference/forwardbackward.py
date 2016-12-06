@@ -85,16 +85,12 @@ class ForwardBackward(object):
         self.backward()
 
         self.Q = np.exp(np.add(self.fq,self.bq))
-
-        #self.Q[np.all(self.Q == 0, axis=1)] = 1e-32
-
-        #print(self.Q)
         
         self.Qnorm = np.sum(self.Q, axis=1)
 
         self.Q = normalize(self.Q, norm='l1', axis=1)
 
-        #print(self.Q)
+        
 
         #if self.verbose:
         print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
@@ -108,10 +104,6 @@ class ForwardBackward(object):
                 self.B[t,:] = update #np.exp(self.termination(t))/self.Qnorm[t]
             else:
                 self.B[t,:] = np.random.rand(1,self.k)
-
-        #print("###",self.B)
-
-        #self.B = normalize(self.B, norm='l1', axis=1)
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
@@ -127,10 +119,7 @@ class ForwardBackward(object):
         self.X = X[0]
 
         self.Q = np.random.rand(len(self.X),self.k)
-      
-        self.Qnorm = np.sum(self.Q, axis=1)
-
-        self.Q = normalize(self.Q, norm='l1', axis=1)   
+  
 
         for t in range(len(self.X)):
             self.B[t,:] = np.random.rand(1,self.k)
@@ -170,8 +159,8 @@ class ForwardBackward(object):
                                         for h in range(self.k)
                                      ])
 
-                #if self.verbose:
-                #print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
+                if self.verbose:
+                    print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
@@ -208,7 +197,7 @@ class ForwardBackward(object):
                     logsumexp([ backward_dict[(cur_time, hp)] +\
                                 np.log(self._pi_a_giv_s(state,action,h)) +\
                                 np.log((self.P[hp,h]*self._pi_term_giv_s(next_state,h) + \
-                                                                 (1-self._pi_term_giv_s(state,h))*(hp == h)
+                                                                 (1-self._pi_term_giv_s(next_state,h))*(hp == h)
                                                                 ))\
                                 for hp in range(self.k)
                               ])

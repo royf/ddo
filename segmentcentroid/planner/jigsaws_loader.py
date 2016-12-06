@@ -48,6 +48,8 @@ class JigsawsPlanner(AbstractPlanner):
 
         if max_depth == -1:
             max_depth = len(states)
+        else:
+            max_depth = min(max_depth, len(states))
 
         traj = []
 
