@@ -1,6 +1,4 @@
 from .TFModel import TFNetworkModel
-import tensorflow as tf
-import numpy as np
 from .models import *
 
 class GridWorldModel(TFNetworkModel):

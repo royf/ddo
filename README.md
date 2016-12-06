@@ -31,4 +31,8 @@ Clone the git repo
 git clone https://sjyk@bitbucket.org/sjyk/segment-centroid.git
 ```
 
-## Getting Started
+## Documentation
+
+[Getting Started](https://bitbucket.org/sjyk/segment-centroid/src/master/resources/docs/GettingStarted.md)
+
+
