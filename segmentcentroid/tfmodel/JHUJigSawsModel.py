@@ -25,7 +25,7 @@ class JHUJigSawsModel(TFNetworkModel):
     def createPolicyNetwork(self):
 
         return continuousTwoLayerReLU(self.statedim[0],
-                                      self.actiondim[1],
+                                      self.actiondim[0],
                                       self.variance,
                                       self.hidden_layer)  
 
@@ -34,6 +34,5 @@ class JHUJigSawsModel(TFNetworkModel):
 
         return multiLayerPerceptron(self.statedim[0],
                                     2,
-                                    self.variance,
                                     self.hidden_layer)
 

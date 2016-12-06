@@ -25,7 +25,7 @@ class ValueIteration(object):
     def fit(self, horizon=100):
         for t in range(horizon):
             
-            print(len([v for v in self.value_function if self.value_function[v] > 0]))
+            #print(len([v for v in self.value_function if self.value_function[v] > 0]))
 
             self._one_step_bb()
 

@@ -150,6 +150,9 @@ class TFModel(object):
 
 
 
+
+
+
 class TFNetworkModel(TFModel):
     """
     This class defines the abstract class for a tensorflow model for the primitives.
@@ -163,7 +166,7 @@ class TFNetworkModel(TFModel):
         self.policy_networks = []
         self.transition_networks = []
 
-        super(TFNetworkModel).__init__(statedim, actiondim, k)
+        super(TFNetworkModel, self).__init__(statedim, actiondim, k)
 
 
     def getLossFunction(self):
@@ -216,7 +219,7 @@ class TFNetworkModel(TFModel):
         encoded_action = 1
         dist = np.ravel(self.sess.run(self.transition_networks[index]['prob'], feed_dict))
 
-        if not self.policy_networks[index]['discrete']:
+        if not self.transition_networks[index]['discrete']:
             raise ValueError("Transition function must be discrete")
 
         return dist[encoded_action]/np.sum(dist)

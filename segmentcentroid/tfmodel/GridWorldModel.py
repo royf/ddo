@@ -1,8 +1,9 @@
 from .TFModel import TFNetworkModel
 import tensorflow as tf
 import numpy as np
+from .models import *
 
-class GridWorldModel(TFModel):
+class GridWorldModel(TFNetworkModel):
     
     """
     This class defines the abstract class for a tensorflow model for the primitives.
@@ -15,10 +16,8 @@ class GridWorldModel(TFModel):
                  hidden_layer=32):
 
         self.hidden_layer = hidden_layer
-        self.init_var = init_var
-        self.init_scale = init_scale
         
-        super(GridWorldSoftMaxModel, self).__init__(statedim, actiondim, k)
+        super(GridWorldModel, self).__init__(statedim, actiondim, k)
 
 
     def createPolicyNetwork(self):

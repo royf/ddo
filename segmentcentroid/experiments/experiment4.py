@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from segmentcentroid.envs.GridWorldGasEnv import GridWorldGasEnv
-from segmentcentroid.tfmodel.GridWorldSoftMaxModel import GridWorldSoftMaxModel
+from segmentcentroid.tfmodel.GridWorldModel import GridWorldModel
 from segmentcentroid.planner.value_iteration import ValueIterationPlanner
 from segmentcentroid.planner.traj_utils import *
 
@@ -17,7 +17,7 @@ def runPolicies(demonstrations=10,
         learning_rate=1e-3,
         env_noise=0.1):
 
-    m  = GridWorldSoftMaxModel((3,1), (4,1), 2)
+    m  = GridWorldModel((3,1), (4,1), 2)
 
     MAP_NAME = 'resources/GridWorldMaps/experiment4.txt'
     gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)

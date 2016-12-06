@@ -38,7 +38,7 @@ def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
 
 
 def logisticRegression(sdim, 
-                       adim)
+                       adim):
 
     x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -67,7 +67,7 @@ def logisticRegression(sdim,
 
 def multiLayerPerceptron(sdim, 
                          adim, 
-                         hidden_layer=64)
+                         hidden_layer=64):
 
         x = tf.placeholder(tf.float32, shape=[None, sdim])
 
@@ -78,7 +78,7 @@ def multiLayerPerceptron(sdim,
         weight = tf.placeholder(tf.float32, shape=[None, 1])
 
         W_h1 = tf.Variable(tf.random_normal([sdim, hidden_layer]))
-        b_1 = tf.Variable(tf.random_normal([self.hidden_layer]))
+        b_1 = tf.Variable(tf.random_normal([hidden_layer]))
         h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
 
         W_out = tf.Variable(tf.random_normal([hidden_layer, adim]))
