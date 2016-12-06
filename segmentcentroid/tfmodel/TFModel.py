@@ -175,7 +175,7 @@ class TFModel(object):
         return feed_dict
 
     def samplePretrainBatch(self, X):
-         """
+        """
         samplePretainBatch executes returns a batch of data with random weights (no forward backward)
 
         Positional arguments:
@@ -183,6 +183,7 @@ class TFModel(object):
         """
 
         loss, pivars, psivars = self.getLossFunction()
+
         traj_index = np.random.choice(len(X))
         weights = self.fb.randomWeights([X[traj_index]])
         feed_dict = {}

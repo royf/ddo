@@ -11,3 +11,7 @@
 
 #from segmentcentroid.experiments import experiment4 as exp4
 #exp4.runPolicies()
+
+from segmentcentroid.experiments import experiment5 as exp5
+exp5.runPolicies()
+

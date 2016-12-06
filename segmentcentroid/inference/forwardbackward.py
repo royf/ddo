@@ -188,6 +188,7 @@ class ForwardBackward(object):
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
+            
 
     def backward(self):
         """

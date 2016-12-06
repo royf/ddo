@@ -114,29 +114,29 @@ def multiLayerPerceptron(sdim,
     hidden_later -- int size of the hidden layer
     """
 
-        x = tf.placeholder(tf.float32, shape=[None, sdim])
+    x = tf.placeholder(tf.float32, shape=[None, sdim])
 
-        #must be one-hot encoded
-        a = tf.placeholder(tf.float32, shape=[None, adim])
+    #must be one-hot encoded
+    a = tf.placeholder(tf.float32, shape=[None, adim])
 
-        #must be a scalar
-        weight = tf.placeholder(tf.float32, shape=[None, 1])
+    #must be a scalar
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
 
-        W_h1 = tf.Variable(tf.random_normal([sdim, hidden_layer]))
-        b_1 = tf.Variable(tf.random_normal([hidden_layer]))
-        h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
+    W_h1 = tf.Variable(tf.random_normal([sdim, hidden_layer]))
+    b_1 = tf.Variable(tf.random_normal([hidden_layer]))
+    h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
 
-        W_out = tf.Variable(tf.random_normal([hidden_layer, adim]))
-        b_out = tf.Variable(tf.random_normal([adim]))
+    W_out = tf.Variable(tf.random_normal([hidden_layer, adim]))
+    b_out = tf.Variable(tf.random_normal([adim]))
         
-        logit = tf.matmul(h1, W_out) + b_out
-        y = tf.nn.softmax(logit)
+    logit = tf.matmul(h1, W_out) + b_out
+    y = tf.nn.softmax(logit)
 
-        logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
-        wlogprob = tf.transpose(tf.transpose(weight)*logprob)
+    wlogprob = tf.transpose(tf.transpose(weight)*logprob)
         
-        return {'state': x, 
+    return {'state': x, 
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
