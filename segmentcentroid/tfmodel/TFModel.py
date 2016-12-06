@@ -150,6 +150,78 @@ class TFModel(object):
 
 
 
+class TFNetworkModel(TFModel):
+    """
+    This class defines the abstract class for a tensorflow model for the primitives.
+    """
+
+    def __init__(self, 
+                 statedim, 
+                 actiondim, 
+                 k):
+
+        self.policy_networks = []
+        self.transition_networks = []
+
+        super(TFNetworkModel).__init__(statedim, actiondim, k)
+
+
+    def getLossFunction(self):
+
+        loss_array = []
+
+        pi_vars = []
+        for i in range(0, self.k):
+            loss_array.append(self.policy_networks[i]['wlprob'])
+            pi_vars.append((self.policy_networks[i]['state'], 
+                            self.policy_networks[i]['action'], 
+                            self.policy_networks[i]['weight']))
+
+        psi_vars = []
+        for i in range(0, self.k):
+            loss_array.append(self.transition_networks[i]['wlprob'])
+            psi_vars.append((self.transition_networks[i]['state'], 
+                            self.transition_networks[i]['action'], 
+                            self.transition_networks[i]['weight']))
+
+        return tf.reduce_sum(loss_array), pi_vars, psi_vars
+
+
+
+    def initialize(self):
+        for i in range(0, self.k):
+            self.policy_networks.append(self.createPolicyNetwork())
+
+        for i in range(0, self.k):
+            self.transition_networks.append(self.createTransitionNetwork())
+
+
+    #returns a probability distribution over actions
+    def _evalpi(self, index, s, a):
+        feed_dict = {self.policy_networks[index]['state']: s.reshape((1, self.statedim[0])),
+                     self.policy_networks[index]['action']: a.reshape((1,self.actiondim[0]))}
+
+        dist = np.ravel(self.sess.run(self.policy_networks[index]['prob'], feed_dict))
+
+        if self.policy_networks[index]['discrete']:
+            encoded_action = np.argwhere(a > 0)[0][0]
+            return dist[encoded_action]/np.sum(dist)
+        else: 
+            return dist
+            
+
+    #returns a probability distribution over actions
+    def _evalpsi(self, index, s):
+        feed_dict = {self.transition_networks[index]['state']: s.reshape((1, self.statedim[0]))}
+        encoded_action = 1
+        dist = np.ravel(self.sess.run(self.transition_networks[index]['prob'], feed_dict))
+
+        if not self.policy_networks[index]['discrete']:
+            raise ValueError("Transition function must be discrete")
+
+        return dist[encoded_action]/np.sum(dist)
+
+
 
 
         
