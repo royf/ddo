@@ -24,11 +24,13 @@ class JHUJigSawsModel(TFNetworkModel):
 
     def createPolicyNetwork(self):
 
+        #return affine(self.statedim[0],
+        #              self.actiondim[0],
+        #              self.variance)  
+
         return continuousTwoLayerReLU(self.statedim[0],
                                       self.actiondim[0],
-                                      self.variance,
-                                      self.hidden_layer)  
-
+                                      self.variance) 
 
     def createTransitionNetwork(self):
 

@@ -61,57 +61,25 @@ class JigsawsPlanner(AbstractPlanner):
         return traj
 
 
-    def visualizePlan(self, traj, segmentation=None):
+    def visualizePlans(self, trajs, model, filename=None):
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
 
-        colors = [(1,0,0,1), (0,1,0,1), (0,0,1,1), (1,0,1,1), (1,0,0,1), (1,1,1,1), (0,0,0,1), (0.5,0.5,0.5,1)]
+        colors = np.random.rand(model.k,3)
 
-        if segmentation == None:
-            segmentation = np.ravel(np.zeros((len(traj),1)))
+        for i, traj in enumerate(trajs):
+            Q = np.argmax(model.fb.fit([traj])[0][0], axis=1)
+            segset = { j : np.where(Q == j)[0] for j in range(model.k) }
 
-        segkeys = set(segmentation)
+            for s in segset:
 
-        segset = {}
+                plt.scatter(segset[s], segset[s]*0 + i, color=colors[s,:])
 
-        for i,s in enumerate(segmentation):
-            if s not in segset:
-                segset[s] = set()
-
-            segset[s].add(i)
-
-
-        fig = plt.figure()
-
-        if len(self.arms) == 2:
-            ax = fig.add_subplot(121, projection='3d')
-
-            for k in segkeys:
-                scatCollection = ax.scatter([t[0][0] for i,t in enumerate(traj) if i in segset[k]], 
-                                            [t[0][1] for i,t in enumerate(traj) if i in segset[k]], 
-                                            [t[0][2] for i,t in enumerate(traj) if i in segset[k]], 
-                                            color=colors[k])
-
-            ax = fig.add_subplot(122, projection='3d')
-
-            for k in segkeys:
-                ax.scatter([t[0][19] for i,t in enumerate(traj) if i in segset[k]], 
-                            [t[0][20] for i,t in enumerate(traj) if i in segset[k]], 
-                            [t[0][21] for  i,t in enumerate(traj) if i in segset[k]], 
-                            color=colors[k])
-            
+        if filename == None:
             plt.show()
         else:
-            ax = fig.add_subplot(111, projection='3d')
-
-            for k in segkeys:
-                ax.scatter([t[0][0] for i,t in enumerate(traj) if i in segset[k]], 
-                           [t[0][1] for i,t in enumerate(traj) if i in segset[k]], 
-                           [t[0][2] for i,t in enumerate(traj) if i in segset[k]], 
-                           color=colors[k])
+            plt.savefig(filename)
             
-            plt.show()
-
 
 
 

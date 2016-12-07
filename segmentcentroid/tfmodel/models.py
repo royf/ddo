@@ -188,4 +188,42 @@ def gaussianMean(sdim, adim, variance, scale):
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': True}
+
+def affine(sdim, adim, variance):
+    """
+    This function creates a linear regression network that takes states and
+    regresses to actions. It is based on a gated relu.
+
+    Positional arguments:
+    sdim -- int dimensionality of the state-space
+    adim -- int dimensionality of the action-space
+    variance -- float scaling for the probability calculation
+    
+    """
+
+    x = tf.placeholder(tf.float32, shape=[None, sdim])
+
+    a = tf.placeholder(tf.float32, shape=[None, adim])
+
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+    W_h1 = tf.Variable(tf.random_normal([adim, sdim]))
+
+    b_1 = tf.Variable(tf.random_normal([adim]))
+
+    output = tf.matmul(x, W_h1) + b_1
+
+    logprob = tf.nn.l2_loss(output-a)
+
+    y = tf.exp(-logprob/variance)
+
+    wlogprob = weight*logprob
+        
+    return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob,
+                'discrete': False}
     

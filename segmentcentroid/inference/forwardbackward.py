@@ -130,7 +130,7 @@ class ForwardBackward(object):
         self.backward()
 
         print("Backward", datetime.datetime.now()-start)
-        
+
 
         self.Q = np.exp(np.add(self.fq,self.bq))
         
@@ -198,18 +198,14 @@ class ForwardBackward(object):
         #dynamic program
         for cur_time in range(t):
 
-            #state = self.X[cur_time][0]
-            #next_state = self.X[cur_time+1][0]
-            #action = self.X[cur_time][1]
-
             for hp in range(self.k):
 
                 forward_dict[(cur_time+1, hp)] = \
                             logsumexp([ forward_dict[(cur_time, h)] + \
-                                        np.log(self.pi[t,h]) + \
+                                        np.log(self.pi[cur_time,h]) + \
                                         np.log(self.P[hp,h]) + 
-                                        np.log(self.psi[t,h] + \
-                                              (1-self.psi[t,h])*(hp == h))\
+                                        np.log(self.psi[cur_time,h] + \
+                                              (1-self.psi[cur_time,h])*(hp == h))\
                                         for h in range(self.k)
                                      ])
 
@@ -237,22 +233,15 @@ class ForwardBackward(object):
         #dynamic program
         for cur_time in rt:
 
-            state = self.X[cur_time-1][0]
-            
-            if cur_time == len(self.X):
-                next_state = state
-            else:
-                next_state = self.X[cur_time][0]
-
-            action = self.X[cur_time-1][1]
-
             for h in range(self.k):
+
+                clipped_time = min(cur_time,len(self.X)-1)
                 
                 backward_dict[(cur_time-1, h)] = \
                     logsumexp([ backward_dict[(cur_time, hp)] +\
-                                np.log(self.pi[t,h]) +\
-                                np.log((self.P[hp,h]*self.psi[t,h] + \
-                                                                 (1-self.psi[t,h])*(hp == h)
+                                np.log(self.pi[clipped_time,h]) +\
+                                np.log((self.P[hp,h]*self.psi[clipped_time,h] + \
+                                                                 (1-self.psi[clipped_time,h])*(hp == h)
                                                                 ))\
                                 for hp in range(self.k)
                               ])

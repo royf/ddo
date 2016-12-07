@@ -300,13 +300,13 @@ class TFModel(object):
 
         for it in range(iterations):
 
-            print("Iteration", it)
-
             if it % self.checkpoint_freq == 0:
                 print("Checkpointing Train", it, self.checkpoint_file)
                 self.save()
 
             batch = self.sampleBatch(X)
+
+            print("Iteration", it, np.argmax(self.fb.Q, axis=1))
             
             for i in range(subiterations):
                 self.sess.run(train, batch)
