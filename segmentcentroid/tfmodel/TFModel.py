@@ -300,6 +300,8 @@ class TFModel(object):
 
         for it in range(iterations):
 
+            print("Iteration", it)
+
             if it % self.checkpoint_freq == 0:
                 print("Checkpointing Train", it, self.checkpoint_file)
                 self.save()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-#from segmentcentroid.experiments import experiment1 as exp1
-#exp1.runPolicies()
+from segmentcentroid.experiments import experiment1 as exp1
+exp1.runPolicies()
 
 #from segmentcentroid.experiments import experiment2 as exp2
 #exp2.runPolicies()
@@ -12,6 +12,6 @@
 #from segmentcentroid.experiments import experiment4 as exp4
 #exp4.runPolicies()
 
-from segmentcentroid.experiments import experiment5 as exp5
-exp5.runPolicies()
+#from segmentcentroid.experiments import experiment5 as exp5
+#exp5.runPolicies()
 

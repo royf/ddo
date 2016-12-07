@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from sklearn.preprocessing import normalize
 from scipy.misc import logsumexp
+import datetime
 
 class ForwardBackward(object):
     """
@@ -61,15 +62,19 @@ class ForwardBackward(object):
 
             if self.verbose:
                 print("[HC: Forward-Backward] fitting ", i, len(traj))
+            
+            start = datetime.datetime.now()
 
             self.init_iter(i, traj)
+
+            print("Init Iter", datetime.datetime.now()-start)
             
             iter_state[i] = self.fitTraj(traj)
 
         return iter_state
 
 
-    def init_iter(self,index, X):
+    def init_iter(self, index, X, tabulate=True):
         """
         Internal method that initializes the state variables
 
@@ -82,6 +87,21 @@ class ForwardBackward(object):
         self.fq = np.ones((len(X)+1, self.k))/self.k
         self.bq = np.ones((len(X)+1, self.k))/self.k
         self.B = np.ones((len(X)+1, self.k))/2
+
+        self.pi = np.ones((len(X), self.k))
+        self.psi = np.ones((len(X), self.k))
+
+        #todo fix batch it up
+        if tabulate:
+            for t in range(0,len(X)-1):
+                for h in range(0, self.k):
+                    state = X[t][0]
+                    next_state = X[t+1][0]
+                    action = X[t][1]
+                    self.pi[t,h] = self._pi_a_giv_s(state, action, h)
+                    self.psi[t,h] = self._pi_term_giv_s(next_state,h)
+
+        
 
 
     def fitTraj(self, X):
@@ -99,8 +119,18 @@ class ForwardBackward(object):
 
         self.X = X
 
+        start = datetime.datetime.now()
+
         self.forward()
+
+        print("Forward", datetime.datetime.now()-start)
+
+        start = datetime.datetime.now()
+
         self.backward()
+
+        print("Backward", datetime.datetime.now()-start)
+        
 
         self.Q = np.exp(np.add(self.fq,self.bq))
         
@@ -138,7 +168,7 @@ class ForwardBackward(object):
         
         """
 
-        self.init_iter(0, X[0])
+        self.init_iter(0, X[0], tabulate=False)
 
         self.X = X[0]
 
@@ -168,27 +198,27 @@ class ForwardBackward(object):
         #dynamic program
         for cur_time in range(t):
 
-            state = self.X[cur_time][0]
-            next_state = self.X[cur_time+1][0]
-            action = self.X[cur_time][1]
+            #state = self.X[cur_time][0]
+            #next_state = self.X[cur_time+1][0]
+            #action = self.X[cur_time][1]
 
             for hp in range(self.k):
 
                 forward_dict[(cur_time+1, hp)] = \
                             logsumexp([ forward_dict[(cur_time, h)] + \
-                                        np.log(self._pi_a_giv_s(state,action,h)) + \
+                                        np.log(self.pi[t,h]) + \
                                         np.log(self.P[hp,h]) + 
-                                        np.log(self._pi_term_giv_s(next_state,h) + \
-                                              (1-self._pi_term_giv_s(next_state,h))*(hp == h))\
+                                        np.log(self.psi[t,h] + \
+                                              (1-self.psi[t,h])*(hp == h))\
                                         for h in range(self.k)
                                      ])
 
-                if self.verbose:
-                    print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
+                #if self.verbose:
+                #    print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
-            
+
 
     def backward(self):
         """
@@ -220,9 +250,9 @@ class ForwardBackward(object):
                 
                 backward_dict[(cur_time-1, h)] = \
                     logsumexp([ backward_dict[(cur_time, hp)] +\
-                                np.log(self._pi_a_giv_s(state,action,h)) +\
-                                np.log((self.P[hp,h]*self._pi_term_giv_s(next_state,h) + \
-                                                                 (1-self._pi_term_giv_s(next_state,h))*(hp == h)
+                                np.log(self.pi[t,h]) +\
+                                np.log((self.P[hp,h]*self.psi[t,h] + \
+                                                                 (1-self.psi[t,h])*(hp == h)
                                                                 ))\
                                 for hp in range(self.k)
                               ])
@@ -255,9 +285,9 @@ class ForwardBackward(object):
 
             termination[h] = \
                 logsumexp([self.fq[t,h] + \
-                           np.log(self._pi_a_giv_s(state,action, h)) + \
+                           np.log(self.pi[t,h]) + \
                            np.log(self.P[hp,h]) + \
-                           np.log(self._pi_term_giv_s(next_state, h)) + \
+                           np.log(self.psi[t,h]) + \
                            self.bq[t+1,hp] \
                            for hp in range(self.k)
                           ])
