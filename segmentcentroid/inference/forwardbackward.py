@@ -83,10 +83,10 @@ class ForwardBackward(object):
         X -- trajectory
         """
 
-        self.Q = np.ones((len(X)+1, self.k))/self.k
-        self.fq = np.ones((len(X)+1, self.k))/self.k
-        self.bq = np.ones((len(X)+1, self.k))/self.k
-        self.B = np.ones((len(X)+1, self.k))/2
+        self.Q = np.ones((len(X)+1, self.k) , dtype='float128')/self.k
+        self.fq = np.ones((len(X)+1, self.k) , dtype='float128')/self.k
+        self.bq = np.ones((len(X)+1, self.k), dtype='float128')/self.k
+        self.B = np.ones((len(X)+1, self.k), dtype='float128')/2
 
         self.pi = np.ones((len(X), self.k))
         self.psi = np.ones((len(X), self.k))
@@ -133,10 +133,18 @@ class ForwardBackward(object):
 
 
         self.Q = np.exp(np.add(self.fq,self.bq))
-        
+
+
+        #find all points where Q is zero throughout 
+        #print(np.sum(self.Q, axis=1) == 0)     
+        #self.Q[np.sum(self.Q, axis=1) == 0, :] = np.ones((1,self.k))/self.k
+
         self.Qnorm = np.sum(self.Q, axis=1)
 
-        self.Q = normalize(self.Q, norm='l1', axis=1)
+
+        self.Q = self.Q / self.Qnorm[:, None]
+
+        print(self.Q)
 
         
         #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
@@ -146,10 +154,12 @@ class ForwardBackward(object):
 
         for t in range(len(self.X)):
             update = np.exp(self.termination(t))/self.Qnorm[t]
+            print(update)
             if not np.isnan(update[0]):
                 self.B[t,:] = update #np.exp(self.termination(t))/self.Qnorm[t]
             else:
                 self.B[t,:] = np.random.rand(1,self.k)
+
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 

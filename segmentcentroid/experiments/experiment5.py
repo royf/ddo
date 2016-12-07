@@ -12,18 +12,29 @@ import copy
 import tensorflow as tf
 
 
-def runPolicies(demonstrations=20,
+def runPolicies(demonstrations=30,
                 directory='/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/',
                 pretrain=1000,
-                super_iterations=100,
-                sub_iterations=100,
-                learning_rate=1e-3):
+                super_iterations=10,
+                sub_iterations=1000,
+                learning_rate=1e-2):
 
     j = JigsawsPlanner(directory)
 
     full_traj = []
     for i in range(0,demonstrations):
         full_traj.append(j.plan())
+
+    j = JigsawsPlanner('/Users/sanjayk/Downloads/Suturing/kinematics/AllGestures/')
+
+    for i in range(0,demonstrations):
+        full_traj.append(j.plan())
+
+    j = JigsawsPlanner('/Users/sanjayk/Downloads/Needle_Passing/kinematics/AllGestures/')
+
+    for i in range(0,demonstrations):
+        full_traj.append(j.plan())
+
     
     m  = JHUJigSawsModel(8)
 
@@ -33,7 +44,7 @@ def runPolicies(demonstrations=20,
     
     m.train(opt, full_traj, super_iterations, sub_iterations)
 
-    j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs2.png")
+    j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs3.png")
 
 
 
