@@ -34,9 +34,10 @@ class JHUJigSawsModel(TFNetworkModel):
 
     def createTransitionNetwork(self):
 
-        return multiLayerPerceptron(self.statedim[0],
-                                    2,
-                                    self.hidden_layer)
+        return logisticRegression(self.statedim[0], 2)
+                #multiLayerPerceptron(self.statedim[0],
+                #                    2,
+                #                    self.hidden_layer)
 
 
 

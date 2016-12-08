@@ -131,35 +131,21 @@ class ForwardBackward(object):
 
         print("Backward", datetime.datetime.now()-start)
 
+        
+        Qunorm = np.exp(np.add(self.fq,self.bq))
 
-        self.Q = np.exp(np.add(self.fq,self.bq))
+        self.Qnorm = logsumexp(Qunorm, axis=1)
 
-
-        #find all points where Q is zero throughout 
-        #print(np.sum(self.Q, axis=1) == 0)     
-        #self.Q[np.sum(self.Q, axis=1) == 0, :] = np.ones((1,self.k))/self.k
-
-        self.Qnorm = np.sum(self.Q, axis=1)
-
-
-        self.Q = self.Q / self.Qnorm[:, None]
-
-        print(self.Q)
-
+        self.Q = np.exp(self.Q - self.Qnorm[:, None])
         
         #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
         self.updateTransitionProbability()      
 
-
         for t in range(len(self.X)):
-            update = np.exp(self.termination(t))/self.Qnorm[t]
+            update = np.exp(self.termination(t) - self.Qnorm[t])
             print(update)
-            if not np.isnan(update[0]):
-                self.B[t,:] = update #np.exp(self.termination(t))/self.Qnorm[t]
-            else:
-                self.B[t,:] = np.random.rand(1,self.k)
-
+            self.B[t,:] = update
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 

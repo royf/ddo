@@ -14,9 +14,9 @@ import tensorflow as tf
 
 def runPolicies(demonstrations=30,
                 directory='/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/',
-                pretrain=1000,
+                pretrain=100,
                 super_iterations=10,
-                sub_iterations=1000,
+                sub_iterations=1,
                 learning_rate=1e-2):
 
     j = JigsawsPlanner(directory)
