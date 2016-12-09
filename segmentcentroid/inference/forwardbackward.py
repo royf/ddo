@@ -37,7 +37,7 @@ class ForwardBackward(object):
 
         self.P = np.ones((self.k, self.k))/self.k
 
-        self.Pbar = np.ones((self.k, self.k))/2
+        self.Pbar = np.ones((self.k, self.k), dtype='float128')/2
 
 
     def fit(self, trajectoryList):
@@ -132,11 +132,13 @@ class ForwardBackward(object):
         print("Backward", datetime.datetime.now()-start)
 
         
-        Qunorm = np.exp(np.add(self.fq,self.bq))
+        Qunorm = np.add(self.fq,self.bq)
 
         self.Qnorm = logsumexp(Qunorm, axis=1)
 
-        self.Q = np.exp(self.Q - self.Qnorm[:, None])
+        self.Q = np.exp(Qunorm - self.Qnorm[:, None])
+
+        #print(self.Qnorm)
         
         #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
@@ -144,7 +146,7 @@ class ForwardBackward(object):
 
         for t in range(len(self.X)):
             update = np.exp(self.termination(t) - self.Qnorm[t])
-            print(update)
+            #print(update)
             self.B[t,:] = update
 
         if self.verbose:
@@ -172,7 +174,7 @@ class ForwardBackward(object):
   
 
         for t in range(len(self.X)):
-            self.B[t,:] = np.random.rand(1,self.k)
+            self.B[t,:] = np.ones((1,self.k))
 
 
         return self.Q[0:len(self.X),:], self.B[0:len(self.X),:]
@@ -294,7 +296,7 @@ class ForwardBackward(object):
             qtp = self.Q[t+1,:]
             for i in range(self.k):
                 for j in range(self.k):
-                    self.Pbar[i,j] = self.Pbar[i,j] + qt[i]*qtp[j]
+                    self.Pbar[i,j] = self.Pbar[i,j] + np.exp(np.logaddexp(qt[i], qtp[j]))
 
         self.P = normalize(self.Pbar, norm='l1', axis=0)
 

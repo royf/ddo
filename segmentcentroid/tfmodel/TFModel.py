@@ -33,7 +33,7 @@ class TFModel(object):
         self.k = k
 
         self.sess = tf.Session()
-        self.trained = False
+        self.initialized = False
 
         self.checkpoint_file = checkpoint_file
         self.checkpoint_freq = checkpoint_freq
@@ -270,7 +270,7 @@ class TFModel(object):
         loss, train, init = self.getOptimizationVariables(opt)
         
         self.sess.run(init)
-        self.trained = True
+        self.initialized = True
 
         for it in range(iterations):
 
@@ -295,8 +295,9 @@ class TFModel(object):
 
         loss, train, init = self.getOptimizationVariables(opt)
 
-        if not self.trained:
+        if not self.initialized:
             self.sess.run(init)
+            self.initialized = True
 
         for it in range(iterations):
 

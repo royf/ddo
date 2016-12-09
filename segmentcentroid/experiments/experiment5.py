@@ -25,6 +25,7 @@ def runPolicies(demonstrations=30,
     for i in range(0,demonstrations):
         full_traj.append(j.plan())
 
+    """
     j = JigsawsPlanner('/Users/sanjayk/Downloads/Suturing/kinematics/AllGestures/')
 
     for i in range(0,demonstrations):
@@ -34,13 +35,14 @@ def runPolicies(demonstrations=30,
 
     for i in range(0,demonstrations):
         full_traj.append(j.plan())
+    """
 
     
     m  = JHUJigSawsModel(8)
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-    m.pretrain(opt, full_traj, pretrain)
+    #m.pretrain(opt, full_traj, pretrain)
     
     m.train(opt, full_traj, super_iterations, sub_iterations)
 
