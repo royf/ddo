@@ -91,15 +91,10 @@ class ForwardBackward(object):
         self.pi = np.ones((len(X), self.k))
         self.psi = np.ones((len(X), self.k))
 
-        #todo fix batch it up
         if tabulate:
-            for t in range(0,len(X)-1):
-                for h in range(0, self.k):
-                    state = X[t][0]
-                    next_state = X[t+1][0]
-                    action = X[t][1]
-                    self.pi[t,h] = self._pi_a_giv_s(state, action, h)
-                    self.psi[t,h] = self._pi_term_giv_s(next_state,h)
+            for h in range(0, self.k):
+                self.pi[:,h] = self.model.evalpi(h,X)
+                self.psi[:,h] = self.model.evalpsi(h,X)
 
         
 
@@ -138,7 +133,7 @@ class ForwardBackward(object):
 
         self.Q = np.exp(Qunorm - self.Qnorm[:, None])
 
-        #print(self.Qnorm)
+        #print(Qunorm, self.Q)
         
         #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
@@ -146,7 +141,7 @@ class ForwardBackward(object):
 
         for t in range(len(self.X)):
             update = np.exp(self.termination(t) - self.Qnorm[t])
-            #print(update)
+            #print(self.termination(t))
             self.B[t,:] = update
 
         if self.verbose:
@@ -174,7 +169,7 @@ class ForwardBackward(object):
   
 
         for t in range(len(self.X)):
-            self.B[t,:] = np.ones((1,self.k))
+            self.B[t,:] = np.random.choice([0,1])
 
 
         return self.Q[0:len(self.X),:], self.B[0:len(self.X),:]
@@ -186,29 +181,23 @@ class ForwardBackward(object):
         Performs a foward pass, updates the state
         """
 
-        t = len(self.X)-1
-
         #initialize table
         forward_dict = {}
         for h in range(self.k):
             forward_dict[(0,h)] = 0
 
         #dynamic program
-        for cur_time in range(t):
+        for cur_time in range(len(self.X)):
 
             for hp in range(self.k):
 
                 forward_dict[(cur_time+1, hp)] = \
-                            logsumexp([ forward_dict[(cur_time, h)] + \
+                            logsumexp([forward_dict[(cur_time, h)] + \
                                         np.log(self.pi[cur_time,h]) + \
-                                        np.log(self.P[hp,h]) + 
-                                        np.log(self.psi[cur_time,h] + \
+                                        np.log(self.psi[cur_time,h]*self.P[hp,h] + \
                                               (1-self.psi[cur_time,h])*(hp == h))\
                                         for h in range(self.k)
                                      ])
-
-                #if self.verbose:
-                #    print("[HC: Forward-Backward] Forward DP Update", forward_dict[(cur_time+1, hp)], hp, cur_time+1, [ np.log(self._pi_a_giv_s(state,action,h)) for h in range(self.k)]) 
 
         for k in forward_dict:
             self.fq[k[0],k[1]] = forward_dict[k]
@@ -219,28 +208,23 @@ class ForwardBackward(object):
         Performs a backward pass, updates the state
         """
 
-        t = 0
-
         #initialize table
         backward_dict = {}
         for h in range(self.k):
-            backward_dict[(len(self.X),h)] = 0
+            backward_dict[(len(self.X)-1,h)] = 0
 
-        rt = np.arange(len(self.X), t, -1)
+        rt = np.arange(len(self.X)-2, -1, -1)
 
         #dynamic program
         for cur_time in rt:
 
             for h in range(self.k):
-
-                clipped_time = min(cur_time,len(self.X)-1)
                 
-                backward_dict[(cur_time-1, h)] = \
-                    logsumexp([ backward_dict[(cur_time, hp)] +\
-                                np.log(self.pi[clipped_time,h]) +\
-                                np.log((self.P[hp,h]*self.psi[clipped_time,h] + \
-                                                                 (1-self.psi[clipped_time,h])*(hp == h)
-                                                                ))\
+                backward_dict[(cur_time, h)] = np.log(self.pi[cur_time,h]) + \
+                    logsumexp([ backward_dict[(cur_time+1, hp)] +\
+                                np.log((self.P[hp,h]*self.psi[cur_time,h] + \
+                                        (1-self.psi[cur_time,h])*(hp == h)
+                                       ))\
                                 for hp in range(self.k)
                               ])
 
@@ -269,6 +253,8 @@ class ForwardBackward(object):
         termination = {}
 
         for h in range(self.k):
+
+            #print(self.psi[t,:], self.pi[t,:])
 
             termination[h] = \
                 logsumexp([self.fq[t,h] + \
@@ -300,19 +286,6 @@ class ForwardBackward(object):
 
         self.P = normalize(self.Pbar, norm='l1', axis=0)
 
-
-    def _pi_a_giv_s(self, s, a, index):
-        """
-        Wrapper for the model function
-        """
-        return self.model.evalpi(index, s, a)
-
-
-    def _pi_term_giv_s(self, s, index):
-        """
-        Wrapper for the model function
-        """
-        return self.model.evalpsi(index, s)
 
 
 

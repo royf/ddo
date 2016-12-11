@@ -48,7 +48,7 @@ def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
 
     output = tf.matmul(h1, W_out) + b_out
 
-    logprob = tf.nn.l2_loss(output-a)
+    logprob = tf.reduce_sum((output-a)**2, 1)
 
     y = tf.exp(-logprob/variance)
 
@@ -88,7 +88,7 @@ def logisticRegression(sdim, adim):
 
     logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
-    wlogprob = tf.transpose(tf.transpose(weight)*logprob)
+    wlogprob = weight*logprob
         
     return {'state': x, 
                 'action': a, 
@@ -134,7 +134,7 @@ def multiLayerPerceptron(sdim,
 
     logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
-    wlogprob = tf.transpose(tf.transpose(weight)*logprob)
+    wlogprob = weight*logprob
         
     return {'state': x, 
                 'action': a, 
@@ -213,7 +213,7 @@ def affine(sdim, adim, variance):
 
     output = tf.matmul(x, W_h1) + b_1
 
-    logprob = tf.nn.l2_loss(output-a)
+    logprob = tf.reduce_sum((output-a)**2, 1)
 
     y = tf.exp(-logprob/variance)
 

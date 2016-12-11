@@ -67,14 +67,13 @@ class TFModel(object):
 
         self.saver.save(self.sess, self.checkpoint_file)
 
-    def evalpi(self, index, s, a):
+    def evalpi(self, index, traj):
         """
         Returns the probability of action a at state s for primitive index i
 
         Positional arguments:
         index -- int index of the required primitive in {0,...,k}
-        s -- state an np.ndarray in the proper shape
-        a -- action an np.ndarray in the proper shape
+        traj -- a trajectory
 
         Returns:
         float -- probability
@@ -83,20 +82,18 @@ class TFModel(object):
         if index >= self.k:
             raise ValueError("Primitive index is greater than the number of primitives")
 
-        s = np.reshape(s, self.statedim)
+        X, A = self.formatTrajectory(traj)
 
-        a = np.reshape(a, self.actiondim)
-
-        return self._evalpi(index, s, a)
+        return self._evalpi(index, X, A)
 
 
-    def evalpsi(self, index, s):
+    def evalpsi(self, index, traj):
         """
         Returns the probability of action a at state s
 
         Positional arguments:
         index -- int index of the required primitive in {0,...,k}
-        s -- state an np.ndarray in the proper shape
+        traj -- a trajectory
 
         Returns:
         float -- probability
@@ -105,12 +102,13 @@ class TFModel(object):
         if index >= self.k:
             raise ValueError("Primitive index is greater than the number of primitives")
 
-        s = np.reshape(s, self.statedim)
 
-        return self._evalpsi(index, s)
+        X, _ = self.formatTrajectory(traj)
+
+        return self._evalpsi(index, X)
 
 
-    def _evalpi(self, index, s, a):
+    def _evalpi(self, index, X, A):
         """
         Sub classes must implment this actual execution routine to eval the probability
 
@@ -120,7 +118,7 @@ class TFModel(object):
         raise NotImplemented("Must implement an _evalpi function")
 
 
-    def _evalpsi(self, index, s):
+    def _evalpsi(self, index, X):
         """
         Sub classes must implment this actual execution routine to eval the probability
 
@@ -141,6 +139,19 @@ class TFModel(object):
         raise NotImplemented("Must implement a getLossFunction")
 
 
+    def dataTransformer(self, trajectory):
+        """
+        Sub classes can implement a data augmentation class. The default is the identity transform
+
+        Positional arguments: 
+        trajectory -- input is a single trajectory
+
+        Returns:
+        trajectory
+        """
+        return trajectory
+
+
     """
     ####
     Fitting functions. Below we include functions for fitting the models.
@@ -155,13 +166,20 @@ class TFModel(object):
 
         Positional arguments:
         X -- a list of trajectories. Each trajectory is a list of tuples of states and actions
+        dataTransformer -- a data augmentation routine
         """
 
         loss, pivars, psivars = self.getLossFunction()
         traj_index = np.random.choice(len(X))
-        weights = self.fb.fit([X[traj_index]])
+
+        trajectory = self.dataTransformer(X[traj_index])
+
+        weights = self.fb.fit([trajectory])
+
         feed_dict = {}
-        Xm, Am = self.formatTrajectory(X[traj_index])
+        Xm, Am = self.formatTrajectory(trajectory)
+
+        #print(Xm.shape, Am.shape, weights[0][0][:,0].shape, weights[0][1][:,0].shape)
 
         for j in range(self.k):
             feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
@@ -185,9 +203,12 @@ class TFModel(object):
         loss, pivars, psivars = self.getLossFunction()
 
         traj_index = np.random.choice(len(X))
-        weights = self.fb.randomWeights([X[traj_index]])
+
+        trajectory = self.dataTransformer(X[traj_index])
+
+        weights = self.fb.randomWeights([trajectory])
         feed_dict = {}
-        Xm, Am = self.formatTrajectory(X[traj_index])
+        Xm, Am = self.formatTrajectory(trajectory)
 
         for j in range(self.k):
             feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
@@ -277,8 +298,15 @@ class TFModel(object):
             if it % 100 == 0:
                 print("Pretrain Iteration=", it)
 
+            import datetime
+            start = datetime.datetime.now()
             batch = self.samplePretrainBatch(X)
+            print(datetime.datetime.now()-start)
+
+
+            start = datetime.datetime.now()
             self.sess.run(train, batch)
+            print(datetime.datetime.now()-start)
 
 
     def train(self, opt, X, iterations, subiterations):
@@ -380,28 +408,30 @@ class TFNetworkModel(TFModel):
 
     #returns a probability distribution over actions
     def _evalpi(self, index, s, a):
-        feed_dict = {self.policy_networks[index]['state']: s.reshape((1, self.statedim[0])),
-                     self.policy_networks[index]['action']: a.reshape((1,self.actiondim[0]))}
+        feed_dict = {self.policy_networks[index]['state']: s, 
+                     self.policy_networks[index]['action']: a}
 
-        dist = np.ravel(self.sess.run(self.policy_networks[index]['prob'], feed_dict))
+        dist = self.sess.run(self.policy_networks[index]['prob'], feed_dict)
 
         if self.policy_networks[index]['discrete']:
-            encoded_action = np.argwhere(a > 0)[0][0]
-            return dist[encoded_action]/np.sum(dist)
+            normalization = np.sum(dist, axis=1)
+            dnorm = dist / normalization[:, None]
+
+            return np.sum(np.multiply(dnorm,a), axis=1)
         else: 
             return dist
             
 
     #returns a probability distribution over actions
     def _evalpsi(self, index, s):
-        feed_dict = {self.transition_networks[index]['state']: s.reshape((1, self.statedim[0]))}
-        encoded_action = 1
-        dist = np.ravel(self.sess.run(self.transition_networks[index]['prob'], feed_dict))
+        feed_dict = {self.transition_networks[index]['state']: s}
+        #print(s)
+        dist = self.sess.run(self.transition_networks[index]['prob'], feed_dict)
 
         if not self.transition_networks[index]['discrete']:
             raise ValueError("Transition function must be discrete")
 
-        return dist[encoded_action]/np.sum(dist)
+        return dist[:,1]/np.sum(dist, axis=1)
 
 
 

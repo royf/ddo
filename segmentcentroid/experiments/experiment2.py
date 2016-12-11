@@ -65,7 +65,7 @@ def runPolicies(demonstrations=100,
 
     g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-    for i in range(m.k):
+   for i in range(m.k):
         states = g.getAllStates()
         policy_hash = {}
         trans_hash = {}
@@ -73,7 +73,7 @@ def runPolicies(demonstrations=100,
         for s in states:
 
             #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-            l = [m.evalpi(i,s, actions[j,:]) for j in g.possibleActions(s)]
+            l = [ np.ravel(m.evalpi(i, [(s, actions[j,:])] ))  for j in g.possibleActions(s)]
 
             if len(l) == 0:
                 continue
@@ -84,7 +84,7 @@ def runPolicies(demonstrations=100,
             policy_hash[s] = action
 
             #print(transitions[i].eval(np.array(ns)))
-            trans_hash[s] = 0#m.evalpsi(i,s)
+            trans_hash[s] = 0
 
         g.visualizePolicy(policy_hash, trans_hash, blank=True, filename="resources/results/exp2-policy"+str(i)+".png")
 

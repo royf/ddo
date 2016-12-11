@@ -11,9 +11,9 @@ import copy
 import tensorflow as tf
 
 
-def runPolicies(demonstrations=50,
-        super_iterations=100,
-        sub_iterations=1000,
+def runPolicies(demonstrations=100,
+        super_iterations=500,
+        sub_iterations=1,
         learning_rate=1e-3,
         env_noise=0.1):
 
@@ -46,6 +46,7 @@ def runPolicies(demonstrations=50,
 
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
+
     m.train(opt, full_traj, super_iterations, sub_iterations)
 
     actions = np.eye(4)
@@ -61,7 +62,7 @@ def runPolicies(demonstrations=50,
         for s in states:
 
             #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-            l = [m.evalpi(i,s, actions[j,:]) for j in g.possibleActions(s)]
+            l = [ np.ravel(m.evalpi(i, [(s, actions[j,:])] ))  for j in g.possibleActions(s)]
 
             if len(l) == 0:
                 continue

@@ -73,7 +73,7 @@ def runPolicies(demonstrations=10,
         for s in states:
 
             #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-            l = [m.evalpi(i,s, actions[j,:]) for j in g.possibleActions(s)]
+            l = [ np.ravel(m.evalpi(i, [(s, actions[j,:])] ))  for j in g.possibleActions(s)]
 
             if len(l) == 0:
                 continue
@@ -97,7 +97,7 @@ def runPolicies(demonstrations=10,
         for s in states:
 
             #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-            l = [m.evalpi(i,s, actions[j,:]) for j in g.possibleActions(s)]
+            l = [ np.ravel(m.evalpi(i, [(s, actions[j,:])] ))  for j in g.possibleActions(s)]
 
             if len(l) == 0:
                 continue
