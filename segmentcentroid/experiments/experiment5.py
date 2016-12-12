@@ -15,7 +15,7 @@ import tensorflow as tf
 def runPolicies(demonstrations=10,
                 directory='/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/',
                 pretrain=100,
-                super_iterations=100,
+                super_iterations=200,
                 sub_iterations=1,
                 learning_rate=1e-2):
 
@@ -36,9 +36,9 @@ def runPolicies(demonstrations=10,
     for i in range(0,demonstrations):
         full_traj.append(j.plan())
     """
-
     
-    m  = JHUJigSawsModel(4)
+
+    m  = JHUJigSawsModel(3)
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
@@ -46,7 +46,7 @@ def runPolicies(demonstrations=10,
     
     m.train(opt, full_traj, super_iterations, sub_iterations)
 
-    j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs6.png")
+    j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs7.png")
 
 
 

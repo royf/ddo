@@ -114,28 +114,17 @@ class ForwardBackward(object):
 
         self.X = X
 
-        start = datetime.datetime.now()
-
         self.forward()
-
-        print("Forward", datetime.datetime.now()-start)
 
         start = datetime.datetime.now()
 
         self.backward()
-
-        print("Backward", datetime.datetime.now()-start)
-
         
         Qunorm = np.add(self.fq,self.bq)
 
         self.Qnorm = logsumexp(Qunorm, axis=1)
 
         self.Q = np.exp(Qunorm - self.Qnorm[:, None])
-
-        #print(Qunorm, self.Q)
-        
-        #print("[HC: Forward-Backward] Q Update", np.argmax(self.Q, axis=1), len(np.argwhere(np.argmax(self.Q, axis=1) > 0))) 
 
         self.updateTransitionProbability()      
 

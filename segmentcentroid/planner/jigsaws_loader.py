@@ -9,10 +9,12 @@ from .AbstractPlanner import *
 
 class JigsawsPlanner(AbstractPlanner):
 
-    def __init__(self, directory, arms=['left', 'right']):
+    def __init__(self, kdirectory, arms=['left', 'right'], vdirectory=None):
 
         #declaring variables that should be set
-        self.directory = directory
+        self.directory = kdirectory
+        self.vdirectory = vdirectory
+
         self.arms = arms
 
         if arms == ['left', 'right']:
@@ -41,23 +43,63 @@ class JigsawsPlanner(AbstractPlanner):
     def plan(self, max_depth=-1, start=None):
         files = [f for f in listdir(self.directory) if isfile(join(self.directory, f))]
         index = np.random.choice(len(files))
-        f = open(self.directory+"/"+files[index], "r")
         
+        f = open(self.directory+"/"+files[index], "rb")
+
         lines = f.readlines()
         states = [np.array([float(li) for li in l.split()][self.START:self.END]) for l in lines]
 
-        if max_depth == -1:
-            max_depth = len(states)
+
+        if self.vdirectory != None:
+            demoname = files[index].split('.')[0]
+            videoname = self.vdirectory+ "/processed-" + demoname + "_capture1.avi"
+            
+            import cv2 #only if you want videos
+
+            cap = cv2.VideoCapture(videoname)
+
+            ret = True
+
+            videos = []
+
+            while ret:
+                ret, frame = cap.read()
+                videos.append(frame)
+
+            offset = len(videos) - len(states)
+
+            print(offset)
+
+            if offset < 0:
+                raise ValueError("Misalignment between video an kinematics", videoname)
+
+
+            if max_depth == -1:
+                max_depth = len(states)
+            else:
+                max_depth = min(max_depth, len(states))
+
+            traj = []
+
+            for t in range(1, max_depth):
+                xt = (states[t-1], videos[t-1+offset])
+                xtp = states[t]
+                traj.append((xt, xtp-states[t-1]))
         else:
-            max_depth = min(max_depth, len(states))
 
-        traj = []
+            if max_depth == -1:
+                max_depth = len(states)
+            else:
+                max_depth = min(max_depth, len(states))
 
-        for t in range(1, max_depth):
-            xt = states[t-1]
-            xtp = states[t]
-            traj.append((xt, xtp-xt))
+            traj = []
 
+            for t in range(1, max_depth):
+                xt = states[t-1]
+                xtp = states[t]
+                traj.append((xt, xtp-states[t-1]))
+
+        
         return traj
 
 

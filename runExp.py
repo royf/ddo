@@ -12,6 +12,9 @@
 #from segmentcentroid.experiments import experiment4 as exp4
 #exp4.runPolicies()
 
-from segmentcentroid.experiments import experiment5 as exp5
-exp5.runPolicies()
+#from segmentcentroid.experiments import experiment5 as exp5
+#exp5.runPolicies()
 
+from segmentcentroid.planner.jigsaws_loader import JigsawsPlanner
+j = JigsawsPlanner("/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/", vdirectory="/Users/sanjayk/Downloads/Knot_Tying/video/")
+print(j.plan())
