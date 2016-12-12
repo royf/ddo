@@ -230,26 +230,37 @@ class TFModel(object):
         trajectory -- a list of state and action tuples.
         """
 
-        if self.statedim[1] != 1:
-            raise NotImplemented("Currently doesn't support more complex trajectories")
+        sarraydims = [s for s in self.statedim]
+        sarraydims.insert(0, len(trajectory))
+        #creates an n+1 d array 
 
-        if self.actiondim[1] != 1:
-            raise NotImplemented("Currently doesn't support more complex trajectories")
+        aarraydims = [a for a in self.actiondim]
+        aarraydims.insert(0, len(trajectory))
+        #creates an n+1 d array 
 
-        sdim = self.statedim[0]
-        adim = self.actiondim[0]
-
-        X = np.zeros((len(trajectory),sdim))
-        A = np.zeros((len(trajectory),adim))
+        X = np.zeros(tuple(sarraydims))
+        A = np.zeros(tuple(aarraydims))
 
         for t in range(len(trajectory)):
-            s = np.transpose(np.reshape(trajectory[t][0], self.statedim))
-            a = np.transpose(np.reshape(trajectory[t][1], self.actiondim))
+            s = np.reshape(trajectory[t][0], self.statedim)
+            a = np.reshape(trajectory[t][1], self.actiondim)
 
             X[t,:] = s
             A[t,:] = a
 
-        return X,A
+
+        #special case for 2d arrays
+        if len(self.statedim) == 2 and \
+           self.statedim[1] == 1:
+           X = np.squeeze(X,axis=2)
+           #print(X.shape)
+        
+        if len(self.actiondim) == 2 and \
+           self.actiondim[1] == 1:
+           A = np.squeeze(A,axis=2)
+           #print(A.shape)
+
+        return X, A
 
     def formatTransitions(self, transitions):
         """

@@ -68,8 +68,6 @@ class JigsawsPlanner(AbstractPlanner):
 
             offset = len(videos) - len(states)
 
-            print(offset)
-
             if offset < 0:
                 raise ValueError("Misalignment between video an kinematics", videoname)
 
