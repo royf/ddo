@@ -68,8 +68,8 @@ class JigsawsPlanner(AbstractPlanner):
 
             offset = len(videos) - len(states)
 
-            if offset < 0:
-                raise ValueError("Misalignment between video an kinematics", videoname)
+            if offset < 0 or videos[0].shape != (480, 640, 3):
+                raise ValueError("Dity Data: Misalignment between video and kinematics", videoname)
 
 
             if max_depth == -1:

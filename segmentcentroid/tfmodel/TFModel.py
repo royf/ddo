@@ -242,6 +242,7 @@ class TFModel(object):
         A = np.zeros(tuple(aarraydims))
 
         for t in range(len(trajectory)):
+            #print(trajectory[t][0].shape, self.statedim)
             s = np.reshape(trajectory[t][0], self.statedim)
             a = np.reshape(trajectory[t][1], self.actiondim)
 

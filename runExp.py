@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from segmentcentroid.experiments import experiment1 as exp1
-exp1.runPolicies()
+#from segmentcentroid.experiments import experiment1 as exp1
+#exp1.runPolicies()
 
 #from segmentcentroid.experiments import experiment2 as exp2
 #exp2.runPolicies()
@@ -15,7 +15,7 @@ exp1.runPolicies()
 #from segmentcentroid.experiments import experiment5 as exp5
 #exp5.runPolicies()
 
-"""
+
 from segmentcentroid.planner.jigsaws_loader import JigsawsPlanner
 from segmentcentroid.tfmodel.JHUJigSawsMultimodalModel import JHUJigSawsMultimodalModel
 import tensorflow as tf
@@ -29,5 +29,4 @@ opt = tf.train.AdamOptimizer(learning_rate=1e-2)
 
 j = JHUJigSawsMultimodalModel(1)
 
-j.pretrain(opt, full_traj, 100)
-"""
+j.train(opt, full_traj, 100, 1)
