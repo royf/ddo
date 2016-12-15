@@ -72,9 +72,27 @@ class ForwardBackward(object):
         """
 
         for t in traj:
-            if t[0].shape != self.model.statedim or \
-               t[1].shape != self.model.actiondim:
-               return False
+
+            #allow for automatic squeezes of the last dimension
+            if self.model.statedim[-1] == 1:
+
+                if t[0].shape != self.model.statedim[:-1]:
+                    return False
+
+            elif self.model.statedim[-1] != 1:
+
+                if t[0].shape != self.model.statedim:
+                    return False
+
+            if self.model.actiondim[-1] == 1:
+
+                if t[1].shape != self.model.actiondim[:-1]:
+                    return False
+
+            elif self.model.actiondim[-1] != 1:
+
+                if t[1].shape != self.model.actiondim:
+                    return False
 
         return True
 

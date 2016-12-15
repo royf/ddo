@@ -23,7 +23,7 @@ import tensorflow as tf
 j = JigsawsPlanner("/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/", vdirectory="/Users/sanjayk/Downloads/Knot_Tying/video/")
 full_traj = []
 
-for i in range(0, 10):
+for i in range(0, 1):
     try:
         full_traj.append(j.plan())
         print(i)
