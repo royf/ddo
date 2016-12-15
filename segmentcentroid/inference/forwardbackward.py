@@ -13,7 +13,7 @@ class ForwardBackward(object):
     with model and logging parameters, and is fit with a list of trajectories.
     """
 
-    def __init__(self, model, verbose=False):
+    def __init__(self, model):
         """
         This initializes the FB algorithm with a TFmodel
 
@@ -22,12 +22,6 @@ class ForwardBackward(object):
         model -- TFModel This is a model object which is a wrapper for a tensorflow model
         verbose -- Boolean True means that FB algorithm will print logging output to stdout
         """
-
-        self.verbose = verbose
-
-        if self.verbose:
-            print("[HC: Forward-Backward] model=",model)
-
         self.model = model
         self.k = model.k
 
@@ -36,8 +30,6 @@ class ForwardBackward(object):
         self.B = None
 
         self.P = np.ones((self.k, self.k))/self.k
-
-        self.Pbar = np.ones((self.k, self.k), dtype='float128')/2
 
 
     def fit(self, trajectoryList):
@@ -55,9 +47,6 @@ class ForwardBackward(object):
 
         iter_state = {}
 
-        if self.verbose:
-            print("[HC: Forward-Backward] found ",len(trajectoryList),"trajectories")
-
         for i, traj in enumerate(trajectoryList):
 
             if self.verbose:
@@ -66,8 +55,6 @@ class ForwardBackward(object):
             start = datetime.datetime.now()
 
             self.init_iter(i, traj)
-
-            print("Init Iter", datetime.datetime.now()-start)
             
             iter_state[i] = self.fitTraj(traj)
 
@@ -97,8 +84,6 @@ class ForwardBackward(object):
                 self.psi[:,h] = self.model.evalpsi(h,X)
 
         
-
-
     def fitTraj(self, X):
         """
         This function runs one pass of the Forward Backward algorithm over
@@ -126,12 +111,16 @@ class ForwardBackward(object):
 
         self.Q = np.exp(Qunorm - self.Qnorm[:, None])
 
-        self.updateTransitionProbability()      
+        #self.updateTransitionProbability()      
 
         for t in range(len(self.X)):
             update = np.exp(self.termination(t) - self.Qnorm[t])
-            #print(self.termination(t))
-            self.B[t,:] = update
+
+            #set the last/first time point to 1
+            if t != len(self.X) - 1 or t != 0:
+                self.B[t,:] = update
+            else:
+                self.B[t,:] = np.ones((1, self.k))
 
         if self.verbose:
             print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
@@ -259,21 +248,6 @@ class ForwardBackward(object):
 
 
         return [termination[h] for h in range(self.k)]
-
-
-    def updateTransitionProbability(self):
-        """
-        Updates the transition probabilities P
-        """
-
-        for t in range(len(self.X)-1):
-            qt = self.Q[t,:]
-            qtp = self.Q[t+1,:]
-            for i in range(self.k):
-                for j in range(self.k):
-                    self.Pbar[i,j] = self.Pbar[i,j] + np.exp(np.logaddexp(qt[i], qtp[j]))
-
-        self.P = normalize(self.Pbar, norm='l1', axis=0)
 
 
 

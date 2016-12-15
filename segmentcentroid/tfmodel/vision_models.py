@@ -23,18 +23,17 @@ def convNet(x, output_dims):
 
     code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
 
-    net = slim.conv2d(x, 64, [11, 11], 4, padding='VALID', scope='conv1'+code)
+    net = slim.conv2d(x, 16, [3, 3], 4, padding='VALID', scope='conv1'+code)
     net = slim.max_pool2d(net, [3, 3], 2, scope='pool1'+code)
-    net = slim.conv2d(net, 192, [5, 5], scope='conv2'+code)
+    net = slim.conv2d(net, 64, [5, 5], scope='conv2'+code)
     net = slim.max_pool2d(net, [3, 3], 2, scope='pool2'+code)
-    net = slim.conv2d(net, 384, [3, 3], scope='conv3'+code)
-    net = slim.conv2d(net, 384, [3, 3], scope='conv4'+code)
-    net = slim.conv2d(net, 256, [3, 3], scope='conv5'+code)
+    net = slim.conv2d(net, 64, [3, 3], scope='conv3'+code)
     net = slim.max_pool2d(net, [3, 3], 2, scope='pool5'+code)
-    net = slim.conv2d(net, 4096, [5, 5], padding='VALID', scope='fc6'+code)
-    net = slim.conv2d(net, 4096, [1, 1], scope='fc7'+code)
+    net = slim.conv2d(net, 384, [1, 1], scope='fc7'+code)
+    net = slim.dropout(net, 0.5, scope='dropout6'+code)
     net = slim.conv2d(net, output_dims, [1, 1], scope='fc8'+code)
-    net = tf.reduce_sum(net, [1, 2], name='fc8/squeezed')
+    net = slim.dropout(net, 0.5, scope='dropout7'+code)
+    net = slim.flatten(net)
     
     output = slim.fully_connected(net, output_dims, 
                                activation_fn=None,
@@ -77,9 +76,6 @@ def convNetAR1(sdims, adim, dropout=0.2, variance=10000):
     y = tf.exp(-logprob/variance)
 
     wlogprob = weight*logprob
-
-
-    print(tf.shape(logprob), tf.shape(y), tf.shape(a))
         
     return {'state': x, 
                 'action': a, 
@@ -116,8 +112,6 @@ def convNetAC1(sdims, adim, dropout=0.2):
     logprob = tf.nn.softmax_cross_entropy_with_logits(output, a)
 
     wlogprob = weight*logprob
-
-    print(tf.shape(logprob), tf.shape(y), tf.shape(a))
         
     return {'state': x, 
                 'action': a, 

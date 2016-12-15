@@ -11,13 +11,13 @@ import copy
 import tensorflow as tf
 
 
-def runPolicies(demonstrations=100,
-        super_iterations=100,
-        sub_iterations=1000,
+def runPolicies(demonstrations=200,
+        super_iterations=1000,
+        sub_iterations=1,
         learning_rate=1e-3,
         env_noise=0.1):
 
-    m  = GridWorldModel((2,1), (4,1), 4)
+    m  = GridWorldModel(4)
 
     MAP_NAME = 'resources/GridWorldMaps/experiment2.txt'
     gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
@@ -41,23 +41,10 @@ def runPolicies(demonstrations=100,
         full_traj.append(new_traj)
         vis_traj.extend(new_traj)
 
-    g.visualizePlan(vis_traj,blank=True, filename="resources/results/exp2-trajs.png")
-
-
+    #g.visualizePlan(vis_traj,blank=True, filename="resources/results/exp2-trajs.png")
 
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
-    loss = m.getLossFunction()[0]
-    train = opt.minimize(loss)
-    init = tf.initialize_all_variables()
-
-    #with m.sess as sess:
-    m.sess.run(init)
-
-    for it in range(super_iterations):
-        print("Iteration",it)
-        batch = m.sampleBatch(full_traj)
-        for i in range(sub_iterations):
-            m.sess.run(train, batch)
+    m.train(opt, full_traj, super_iterations, sub_iterations)
 
 
     actions = np.eye(4)
@@ -65,7 +52,7 @@ def runPolicies(demonstrations=100,
 
     g = GridWorldEnv(copy.copy(gmap), noise=0.0)
 
-   for i in range(m.k):
+    for i in range(m.k):
         states = g.getAllStates()
         policy_hash = {}
         trans_hash = {}
@@ -84,7 +71,7 @@ def runPolicies(demonstrations=100,
             policy_hash[s] = action
 
             #print(transitions[i].eval(np.array(ns)))
-            trans_hash[s] = 0
+            trans_hash[s] = np.ravel(m.evalpsi(i, [(s, actions[1,:])] ))
 
         g.visualizePolicy(policy_hash, trans_hash, blank=True, filename="resources/results/exp2-policy"+str(i)+".png")
 

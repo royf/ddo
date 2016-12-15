@@ -23,10 +23,17 @@ import tensorflow as tf
 j = JigsawsPlanner("/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/", vdirectory="/Users/sanjayk/Downloads/Knot_Tying/video/")
 full_traj = []
 
-full_traj.append(j.plan())
+for i in range(0, 10):
+    try:
+        full_traj.append(j.plan())
+        print(i)
+    except:
+        pass
 
 opt = tf.train.AdamOptimizer(learning_rate=1e-2)
 
-j = JHUJigSawsMultimodalModel(1)
+m = JHUJigSawsMultimodalModel(2)
 
-j.train(opt, full_traj, 100, 1)
+m.train(opt, full_traj, 100, 1)
+
+j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs7.png")

@@ -64,11 +64,12 @@ class JigsawsPlanner(AbstractPlanner):
 
             while ret:
                 ret, frame = cap.read()
-                videos.append(frame)
+                if ret:
+                    videos.append(cv2.resize(frame, (0,0), fx=0.25, fy=0.25) )
 
             offset = len(videos) - len(states)
 
-            if offset < 0 or videos[0].shape != (480, 640, 3):
+            if offset < 0 or videos[0].shape != (120, 160, 3):
                 raise ValueError("Dity Data: Misalignment between video and kinematics", videoname)
 
 

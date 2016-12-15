@@ -12,12 +12,12 @@ import tensorflow as tf
 
 
 def runPolicies(demonstrations=100,
-        super_iterations=500,
+        super_iterations=1000,
         sub_iterations=1,
         learning_rate=1e-3,
         env_noise=0.1):
 
-    m  = GridWorldModel(2)
+    m  = GridWorldModel(2, statedim=(2,1))
 
     MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
     gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
@@ -34,14 +34,21 @@ def runPolicies(demonstrations=100,
         new_traj = []
         for t in traj:
             a = np.zeros(shape=(4,1))
+
+            s = np.zeros(shape=(2,1))
+
             a[t[1]] = 1
 
-            new_traj.append((t[0],a))
+            s[0:2,0] =  t[0]
+            #s[2:4,0] = np.argwhere(g.map == g.START)[0]
+            #s[4:6,0] = np.argwhere(g.map == g.GOAL)[0]
+
+            new_traj.append((s,a))
 
         full_traj.append(new_traj)
         vis_traj.extend(new_traj)
 
-    g.visualizePlan(vis_traj,blank=True, filename="resources/results/exp1-trajs.png")
+    #g.visualizePlan(vis_traj,blank=True, filename="resources/results/exp1-trajs.png")
 
 
 
@@ -53,6 +60,7 @@ def runPolicies(demonstrations=100,
 
 
     g = GridWorldEnv(copy.copy(gmap), noise=0.0)
+    g.generateRandomStartGoal()
 
     for i in range(m.k):
         states = g.getAllStates()
@@ -61,8 +69,13 @@ def runPolicies(demonstrations=100,
 
         for s in states:
 
-            #print([m.evalpi(i,ns, actions[:,j]) for j in range(4)])
-            l = [ np.ravel(m.evalpi(i, [(s, actions[j,:])] ))  for j in g.possibleActions(s)]
+            t = np.zeros(shape=(2,1))
+            t[0:2,0] = s
+            #t[2:4,0] = np.argwhere(g.map == g.START)[0]
+            #t[4:6,0] = np.argwhere(g.map == g.GOAL)[0]
+
+
+            l = [ np.ravel(m.evalpi(i, [(t, actions[j,:])] ))  for j in g.possibleActions(s)]
 
             if len(l) == 0:
                 continue
@@ -73,7 +86,7 @@ def runPolicies(demonstrations=100,
             policy_hash[s] = action
 
             #print(transitions[i].eval(np.array(ns)))
-            trans_hash[s] = 0
+            trans_hash[s] = np.ravel(m.evalpsi(i, [(t, actions[1,:])] ))
 
         g.visualizePolicy(policy_hash, trans_hash, blank=True, filename="resources/results/exp1-policy"+str(i)+".png")
 

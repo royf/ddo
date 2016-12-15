@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from segmentcentroid.inference.forwardbackward import ForwardBackward
+from tensorflow.python.client import timeline
 
 class TFModel(object):
     """
@@ -169,7 +170,8 @@ class TFModel(object):
         dataTransformer -- a data augmentation routine
         """
 
-        loss, pivars, psivars = self.getLossFunction()
+        #loss, pivars, psivars = self.getLossFunction()
+
         traj_index = np.random.choice(len(X))
 
         trajectory = self.dataTransformer(X[traj_index])
@@ -181,14 +183,16 @@ class TFModel(object):
 
         #print(Xm.shape, Am.shape, weights[0][0][:,0].shape, weights[0][1][:,0].shape)
 
-        for j in range(self.k):
-            feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
-            feed_dict[pivars[j][2]] = np.reshape(weights[0][0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+        print("##Q##",weights[0][0])
 
-            feed_dict[psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[psivars[j][1]] = self.formatTransitions(weights[0][1][:,j])[1:len(X[traj_index])-1,:]
-            feed_dict[psivars[j][2]] = np.reshape(weights[0][1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+        for j in range(self.k):
+            feed_dict[self.pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[self.pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
+            feed_dict[self.pivars[j][2]] = np.reshape(weights[0][0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+
+            feed_dict[self.psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[0][1][:,j])[1:len(X[traj_index])-1,:]
+            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
         return feed_dict
 
@@ -200,7 +204,7 @@ class TFModel(object):
         X -- a list of trajectories. Each trajectory is a list of tuples of states and actions
         """
 
-        loss, pivars, psivars = self.getLossFunction()
+        #loss, pivars, psivars = self.getLossFunction()
 
         traj_index = np.random.choice(len(X))
 
@@ -211,13 +215,13 @@ class TFModel(object):
         Xm, Am = self.formatTrajectory(trajectory)
 
         for j in range(self.k):
-            feed_dict[pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
-            feed_dict[pivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+            feed_dict[self.pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[self.pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
+            feed_dict[self.pivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
-            feed_dict[psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[psivars[j][1]] = self.formatTransitions(weights[1][:,j])[1:len(X[traj_index])-1,:]
-            feed_dict[psivars[j][2]] = np.reshape(weights[1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
+            feed_dict[self.psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
+            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[1][:,j])[1:len(X[traj_index])-1,:]
+            feed_dict[self.psivars[j][2]] = np.reshape(weights[1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
         return feed_dict
 
@@ -285,10 +289,17 @@ class TFModel(object):
         Positional arguments:
         opt -- a tf.optimizer
         """
-        loss = self.getLossFunction()[0]
+        loss, pivars, psivars = self.getLossFunction()
         train = opt.minimize(loss)
         init = tf.initialize_all_variables()
-        return (loss, train, init)
+        return (loss, train, init, pivars, psivars)
+
+
+    def startTraining(self, opt):
+        self.loss, self.train, self.init, self.pivars, self.psivars = self.getOptimizationVariables(opt)
+        self.sess.run(self.init)
+        self.initialized = True
+        tf.get_default_graph().finalize()
 
 
     def pretrain(self, opt, X, iterations):
@@ -300,10 +311,7 @@ class TFModel(object):
         X -- a list of trajectories
         iterations -- the number of iterations
         """
-        loss, train, init = self.getOptimizationVariables(opt)
-        
-        self.sess.run(init)
-        self.initialized = True
+        self.startTraining(opt)
 
         for it in range(iterations):
 
@@ -315,10 +323,18 @@ class TFModel(object):
             batch = self.samplePretrainBatch(X)
             print(datetime.datetime.now()-start)
 
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+
 
             start = datetime.datetime.now()
-            self.sess.run(train, batch)
+            self.sess.run(self.train, batch, options=run_options, run_metadata=run_metadata)
             print(datetime.datetime.now()-start)
+
+            tl = timeline.Timeline(run_metadata.step_stats)
+            ctf = tl.generate_chrome_trace_format()
+            with open('timeline2.json', 'w') as f:
+                f.write(ctf)
 
 
     def train(self, opt, X, iterations, subiterations):
@@ -333,11 +349,9 @@ class TFModel(object):
         subiterations -- the number of iterations per forward-backward algorithm
         """
 
-        loss, train, init = self.getOptimizationVariables(opt)
-
         if not self.initialized:
-            self.sess.run(init)
-            self.initialized = True
+            self.startTraining(opt)
+            
 
         for it in range(iterations):
 
@@ -350,7 +364,7 @@ class TFModel(object):
             print("Iteration", it, np.argmax(self.fb.Q, axis=1))
             
             for i in range(subiterations):
-                self.sess.run(train, batch)
+                self.sess.run(self.train, batch)
 
 
 
@@ -423,15 +437,28 @@ class TFNetworkModel(TFModel):
         feed_dict = {self.policy_networks[index]['state']: s, 
                      self.policy_networks[index]['action']: a}
 
-        dist = self.sess.run(self.policy_networks[index]['prob'], feed_dict)
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+
+        dist = self.sess.run(self.policy_networks[index]['prob'], feed_dict, options=run_options, run_metadata=run_metadata)
+
+        print(dist)
+
+        #tl = timeline.Timeline(run_metadata.step_stats)
+        #ctf = tl.generate_chrome_trace_format()
+        #with open('timeline.json', 'w') as f:
+        #    f.write(ctf)
 
         if self.policy_networks[index]['discrete']:
-            normalization = np.sum(dist, axis=1)
-            dnorm = dist / normalization[:, None]
+            return np.sum(np.multiply(dist,a), axis=1)
 
-            return np.sum(np.multiply(dnorm,a), axis=1)
-        else: 
-            return dist
+        #    normalization = np.sum(dist, axis=1)
+        #    dnorm = dist / normalization[:, None]
+        #
+        #    
+        #else: 
+        
+        return dist
             
 
     #returns a probability distribution over actions
@@ -440,10 +467,12 @@ class TFNetworkModel(TFModel):
         #print(s)
         dist = self.sess.run(self.transition_networks[index]['prob'], feed_dict)
 
+        #print(dist)
+
         if not self.transition_networks[index]['discrete']:
             raise ValueError("Transition function must be discrete")
 
-        return dist[:,1]/np.sum(dist, axis=1)
+        return np.exp(np.log(dist[:,1]) - np.log(np.sum(dist, axis=1)))
 
 
 

@@ -11,10 +11,10 @@ class JHUJigSawsMultimodalModel(TFNetworkModel):
 
     def __init__(self,  
                  k,
-                 statedim=(480, 640, 3), 
+                 statedim=(120, 160, 3), 
                  actiondim=(37,1),
                  hidden_layer=64,
-                 variance=10000):
+                 variance=1000):
 
         self.hidden_layer = hidden_layer
         self.variance = variance
@@ -42,7 +42,8 @@ class JHUJigSawsMultimodalModel(TFNetworkModel):
 
     def dataTransformer(self, traj):
         #only video
-        return [(t[0][1],t[1]) for t in traj]
+
+        return [(t[0][1].astype("float32"), t[1]) for t in traj]
 
 
 
