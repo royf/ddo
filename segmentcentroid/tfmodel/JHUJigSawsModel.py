@@ -1,5 +1,5 @@
 from .TFSeparableModel import TFSeparableModel
-from .models import *
+from .supervised_networks import *
 import tensorflow as tf
 import numpy as np
 

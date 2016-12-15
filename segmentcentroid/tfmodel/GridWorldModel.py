@@ -1,5 +1,5 @@
 from .TFSeparableModel import TFSeparableModel
-from .models import *
+from .supervised_networks import *
 
 class GridWorldModel(TFSeparableModel):
     
