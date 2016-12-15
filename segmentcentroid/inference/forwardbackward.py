@@ -49,7 +49,7 @@ class ForwardBackward(object):
 
         for i, traj in enumerate(trajectoryList):
 
-            if not isValid(traj):
+            if not self.isValid(traj):
                 raise ValueError("The provided trajectory does not match the dimensions of the model")
 
             self.init_iter(i, traj)

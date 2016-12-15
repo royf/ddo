@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from .TFModel import TFModel
 from segmentcentroid.inference.forwardbackward import ForwardBackward
 from tensorflow.python.client import timeline
 

@@ -34,6 +34,6 @@ opt = tf.train.AdamOptimizer(learning_rate=1e-2)
 
 m = JHUJigSawsMultimodalModel(2)
 
-m.train(opt, full_traj, 100, 1)
+m.train(opt, full_traj, 10, 1)
 
 j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs7.png")
