@@ -48,9 +48,6 @@ class ForwardBackward(object):
         iter_state = {}
 
         for i, traj in enumerate(trajectoryList):
-
-            if self.verbose:
-                print("[HC: Forward-Backward] fitting ", i, len(traj))
             
             start = datetime.datetime.now()
 
@@ -101,17 +98,13 @@ class ForwardBackward(object):
 
         self.forward()
 
-        start = datetime.datetime.now()
-
         self.backward()
         
         Qunorm = np.add(self.fq,self.bq)
 
         self.Qnorm = logsumexp(Qunorm, axis=1)
 
-        self.Q = np.exp(Qunorm - self.Qnorm[:, None])
-
-        #self.updateTransitionProbability()      
+        self.Q = np.exp(Qunorm - self.Qnorm[:, None])  
 
         for t in range(len(self.X)):
             update = np.exp(self.termination(t) - self.Qnorm[t])
@@ -121,10 +114,6 @@ class ForwardBackward(object):
                 self.B[t,:] = update
             else:
                 self.B[t,:] = np.ones((1, self.k))
-
-        if self.verbose:
-            print("[HC: Forward-Backward] B Update", np.argmax(self.B, axis=1)) 
-
 
         return self.Q[0:len(X),:], self.B[0:len(X),:], self.P
 
@@ -206,9 +195,6 @@ class ForwardBackward(object):
                                 for hp in range(self.k)
                               ])
 
-                if self.verbose:
-                    print("[HC: Forward-Backward] Backward DP Update", backward_dict[(cur_time-1, h)], h, cur_time-1) 
-
         for k in backward_dict:
             self.bq[k[0],k[1]] = backward_dict[k]
 
@@ -242,10 +228,6 @@ class ForwardBackward(object):
                            self.bq[t+1,hp] \
                            for hp in range(self.k)
                           ])
-
-            if self.verbose:
-                    print("[HC: Forward-Backward] Termination Update", termination[h], h) 
-
 
         return [termination[h] for h in range(self.k)]
 
