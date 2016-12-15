@@ -1,9 +1,9 @@
-from .TFModel import TFNetworkModel
+from .TFSeparableModel import TFSeparableModel
 from .models import *
 import tensorflow as tf
 import numpy as np
 
-class JHUJigSawsModel(TFNetworkModel):
+class JHUJigSawsModel(TFSeparableModel):
     
     """
     This class defines the abstract class for a tensorflow model for the primitives.

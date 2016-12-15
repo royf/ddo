@@ -1,7 +1,7 @@
-from .TFModel import TFNetworkModel
+from .TFSeparableModel import TFSeparableModel
 from .models import *
 
-class GridWorldModel(TFNetworkModel):
+class GridWorldModel(TFSeparableModel):
     
     """
     This class defines the abstract class for a tensorflow model for the primitives.

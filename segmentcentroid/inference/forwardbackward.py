@@ -31,6 +31,7 @@ class ForwardBackward(object):
         self.P = np.ones((self.k, self.k))/self.k
 
 
+
     def fit(self, trajectoryList):
         """
         Each trajectory is a sequence of tuple (s,a) where both s and a are numpy
@@ -212,8 +213,6 @@ class ForwardBackward(object):
         termination = {}
 
         for h in range(self.k):
-
-            #print(self.psi[t,:], self.pi[t,:])
 
             termination[h] = \
                 logsumexp([self.fq[t,h] + \
