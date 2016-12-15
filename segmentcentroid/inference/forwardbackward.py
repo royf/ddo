@@ -1,9 +1,8 @@
 
 import numpy as np
 import copy
-from sklearn.preprocessing import normalize
 from scipy.misc import logsumexp
-import datetime
+
 
 class ForwardBackward(object):
     """
@@ -20,8 +19,8 @@ class ForwardBackward(object):
         Positional arguments:
 
         model -- TFModel This is a model object which is a wrapper for a tensorflow model
-        verbose -- Boolean True means that FB algorithm will print logging output to stdout
         """
+
         self.model = model
         self.k = model.k
 
@@ -42,20 +41,41 @@ class ForwardBackward(object):
         trajectoryList -- is a list of trajectories.
 
         Returns:
-        A dict of trajectory id which mapt to the the weights Q, B, P
+        A dict of trajectory id which mapt to the the weights Q, B
         """
 
         iter_state = {}
 
         for i, traj in enumerate(trajectoryList):
-            
-            start = datetime.datetime.now()
+
+            if not isValid(traj):
+                raise ValueError("The provided trajectory does not match the dimensions of the model")
 
             self.init_iter(i, traj)
             
             iter_state[i] = self.fitTraj(traj)
 
         return iter_state
+
+
+    def isValid(self, traj):
+        """
+        Validates that the trajectory matches the state and action dimensions of the model.
+
+        Positional argument:
+
+        traj -- a list of tuples t[0] is a state, and t[1] is an action
+
+        Returns:
+        Boolean
+        """
+
+        for t in traj:
+            if t[0].shape != self.model.statedim or \
+               t[1].shape != self.model.actiondim:
+               return False
+
+        return True
 
 
     def init_iter(self, index, X, tabulate=True):
@@ -118,34 +138,9 @@ class ForwardBackward(object):
         return self.Q[0:len(X),:], self.B[0:len(X),:], self.P
 
 
-    def randomWeights(self, X):
-        """
-        This returns a dummy object back with random weights used for pretraining
-
-        Positional arguments:
-
-        X -- is a list of s,a tuples.
-        
-        """
-
-        self.init_iter(0, X[0], tabulate=False)
-
-        self.X = X[0]
-
-        self.Q = np.random.rand(len(self.X),self.k)
-  
-
-        for t in range(len(self.X)):
-            self.B[t,:] = np.random.choice([0,1])
-
-
-        return self.Q[0:len(self.X),:], self.B[0:len(self.X),:]
-                
-
-
     def forward(self):
         """
-        Performs a foward pass, updates the state
+        Performs a foward pass, updates the 
         """
 
         #initialize table

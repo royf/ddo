@@ -195,36 +195,6 @@ class TFModel(object):
             feed_dict[self.psivars[j][2]] = np.reshape(weights[0][1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
 
         return feed_dict
-
-    def samplePretrainBatch(self, X):
-        """
-        samplePretainBatch executes returns a batch of data with random weights (no forward backward)
-
-        Positional arguments:
-        X -- a list of trajectories. Each trajectory is a list of tuples of states and actions
-        """
-
-        #loss, pivars, psivars = self.getLossFunction()
-
-        traj_index = np.random.choice(len(X))
-
-        trajectory = self.dataTransformer(X[traj_index])
-
-        weights = self.fb.randomWeights([trajectory])
-        feed_dict = {}
-        Xm, Am = self.formatTrajectory(trajectory)
-
-        for j in range(self.k):
-            feed_dict[self.pivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[self.pivars[j][1]] = Am[1:len(X[traj_index])-1,:]
-            feed_dict[self.pivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
-
-            feed_dict[self.psivars[j][0]] = Xm[1:len(X[traj_index])-1,:]
-            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[1][:,j])[1:len(X[traj_index])-1,:]
-            feed_dict[self.psivars[j][2]] = np.reshape(weights[1][:,j], (Xm.shape[0],1))[1:len(X[traj_index])-1,:]
-
-        return feed_dict
-
         
     def formatTrajectory(self, trajectory):
         """
@@ -300,42 +270,6 @@ class TFModel(object):
         self.sess.run(self.init)
         self.initialized = True
         tf.get_default_graph().finalize()
-
-
-    def pretrain(self, opt, X, iterations):
-        """
-        This method pre-trains the model on a randomly weighted dataset
-
-        Positional arguments:
-        opt -- a tf.optimizer
-        X -- a list of trajectories
-        iterations -- the number of iterations
-        """
-        self.startTraining(opt)
-
-        for it in range(iterations):
-
-            if it % 100 == 0:
-                print("Pretrain Iteration=", it)
-
-            import datetime
-            start = datetime.datetime.now()
-            batch = self.samplePretrainBatch(X)
-            print(datetime.datetime.now()-start)
-
-            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-            run_metadata = tf.RunMetadata()
-
-
-            start = datetime.datetime.now()
-            self.sess.run(self.train, batch, options=run_options, run_metadata=run_metadata)
-            print(datetime.datetime.now()-start)
-
-            tl = timeline.Timeline(run_metadata.step_stats)
-            ctf = tl.generate_chrome_trace_format()
-            with open('timeline2.json', 'w') as f:
-                f.write(ctf)
-
 
     def train(self, opt, X, iterations, subiterations):
         """
