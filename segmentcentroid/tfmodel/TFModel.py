@@ -196,7 +196,10 @@ class TFModel(object):
 
         return feed_dict
         
-    def formatTrajectory(self, trajectory):
+    def formatTrajectory(self, 
+                         trajectory, 
+                         statedim=None, 
+                         actiondim=None):
         """
         Internal method that unzips a trajectory into a state and action tuple
 
@@ -204,11 +207,19 @@ class TFModel(object):
         trajectory -- a list of state and action tuples.
         """
 
-        sarraydims = [s for s in self.statedim]
+        #print("###", statedim, actiondim)
+
+        if statedim == None:
+            statedim = self.statedim
+
+        if actiondim == None:
+            actiondim = self.actiondim
+
+        sarraydims = [s for s in statedim]
         sarraydims.insert(0, len(trajectory))
         #creates an n+1 d array 
 
-        aarraydims = [a for a in self.actiondim]
+        aarraydims = [a for a in actiondim]
         aarraydims.insert(0, len(trajectory))
         #creates an n+1 d array 
 
@@ -216,22 +227,22 @@ class TFModel(object):
         A = np.zeros(tuple(aarraydims))
 
         for t in range(len(trajectory)):
-            #print(trajectory[t][0].shape, self.statedim)
-            s = np.reshape(trajectory[t][0], self.statedim)
-            a = np.reshape(trajectory[t][1], self.actiondim)
+            #print(t, trajectory[t][0], trajectory[t][0].shape, statedim)
+            s = np.reshape(trajectory[t][0], statedim)
+            a = np.reshape(trajectory[t][1], actiondim)
 
             X[t,:] = s
             A[t,:] = a
 
 
         #special case for 2d arrays
-        if len(self.statedim) == 2 and \
-           self.statedim[1] == 1:
+        if len(statedim) == 2 and \
+           statedim[1] == 1:
            X = np.squeeze(X,axis=2)
            #print(X.shape)
         
-        if len(self.actiondim) == 2 and \
-           self.actiondim[1] == 1:
+        if len(actiondim) == 2 and \
+           actiondim[1] == 1:
            A = np.squeeze(A,axis=2)
            #print(A.shape)
 

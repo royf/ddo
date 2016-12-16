@@ -207,7 +207,7 @@ def affine(sdim, adim, variance):
 
     weight = tf.placeholder(tf.float32, shape=[None, 1])
 
-    W_h1 = tf.Variable(tf.random_normal([adim, sdim]))
+    W_h1 = tf.Variable(tf.random_normal([sdim, adim]))
 
     b_1 = tf.Variable(tf.random_normal([adim]))
 

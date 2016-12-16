@@ -16,6 +16,7 @@
 #exp5.runPolicies()
 
 
+"""
 from segmentcentroid.planner.jigsaws_loader import JigsawsPlanner
 from segmentcentroid.tfmodel.JHUJigSawsMultimodalModel import JHUJigSawsMultimodalModel
 import tensorflow as tf
@@ -37,3 +38,56 @@ m = JHUJigSawsMultimodalModel(2)
 m.train(opt, full_traj, 10, 1)
 
 j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs7.png")
+"""
+
+from segmentcentroid.planner.jigsaws_loader import JigsawsPlanner
+from segmentcentroid.tfmodel.JHUJigSawsMultimodalModel import JHUJigSawsMultimodalModel
+import tensorflow as tf
+from segmentcentroid.tfmodel.unsupervised_vision_networks import *
+import matplotlib.pyplot as plt
+
+j = JigsawsPlanner("/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/", vdirectory="/Users/sanjayk/Downloads/Knot_Tying/video/")
+full_traj = []
+
+for i in range(0, 1):
+    try:
+        full_traj.append(j.plan())
+        print(i)
+    except:
+        pass
+
+m = JHUJigSawsMultimodalModel(4)
+
+opt = tf.train.MomentumOptimizer(learning_rate=1e-3, momentum=0.01)
+m.pretrain(opt, full_traj, 100)
+
+opt = tf.train.MomentumOptimizer(learning_rate=1e-3, momentum=0.01)
+m.train(opt, full_traj, 100, 1)
+
+
+"""
+ae = conv2LinearAutoencoder([120, 160, 3])
+
+feed_dict = {}
+feed_dict[ae['state']] = X[:100, :, :, :]
+
+opt = tf.train.MomentumOptimizer(learning_rate=1e-2, momentum=0.01)
+train = opt.minimize(ae['loss'])
+
+m.sess.run(tf.initialize_all_variables())
+
+for i in range(0,100):
+    m.sess.run(train, feed_dict)
+    print("Iteration",i,m.sess.run(ae['loss'], feed_dict))
+"""
+
+
+"""
+
+
+
+
+m.train(opt, full_traj, 10, 1)
+
+j.visualizePlans(full_traj, m, filename="resources/results/exp5-trajs7.png")
+"""

@@ -96,7 +96,7 @@ class TFSeparableModel(TFModel):
         if not self.transition_networks[index]['discrete']:
             raise ValueError("Transition function must be discrete")
 
-        return np.exp(np.log(dist[:,1]) - np.log(np.sum(dist, axis=1)))
+        return dist[:,1]
 
 
 
