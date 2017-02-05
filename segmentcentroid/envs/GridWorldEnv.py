@@ -27,7 +27,7 @@ class GridWorldEnv(AbstractEnv):
     STEP_REWARD = -.001
 
     #takes in a 2d integer map coded by the first line of comments
-    def __init__(self, gmap, noise=0.1, random_start=True):
+    def __init__(self, gmap, noise=0.1):
 
         self.map = gmap
         self.start_state = np.argwhere(self.map == self.START)[0]
@@ -261,6 +261,8 @@ class GridWorldEnv(AbstractEnv):
             action = self.ACTIONS[policy[state]]
 
             alpha = transitions[state]
+
+            print(alpha, state)
 
             dx = action[0]*0.5
             dy = action[1]*0.5

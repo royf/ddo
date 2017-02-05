@@ -10,14 +10,21 @@ import copy
 
 import tensorflow as tf
 
+def inRoom1(state):
+    return (state[1] <= 3) 
 
-def runPolicies(demonstrations=100,
-        super_iterations=1000,
-        sub_iterations=1,
-        learning_rate=1e-3,
-        env_noise=0.1):
+def inRoom2(state):
+    return (state[1] > 16) 
 
-    m  = GridWorldModel(2, statedim=(2,1))
+#two rooms start end 
+
+def runPolicies(demonstrations=20,
+        super_iterations=10000,
+        sub_iterations=0,
+        learning_rate=10,
+        env_noise=0.3):
+
+    m  = GridWorldModel(2, statedim=(10,20))
 
     MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
     gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
@@ -27,7 +34,19 @@ def runPolicies(demonstrations=100,
     for i in range(0,demonstrations):
         print("Traj",i)
         g = GridWorldEnv(copy.copy(gmap), noise=env_noise)
-        g.generateRandomStartGoal()
+
+        start = np.argwhere(g.map == g.START)[0]
+        goal = np.argwhere(g.map == g.GOAL)[0]
+        #generate trajectories start in same room and end different room
+        while not ((inRoom1(start) and inRoom2(goal))  or\
+                   (inRoom2(start) and inRoom1(goal))):
+              g.generateRandomStartGoal()
+              start = np.argwhere(g.map == g.START)[0]
+              goal = np.argwhere(g.map == g.GOAL)[0]
+
+
+        print(np.argwhere(g.map == g.START), np.argwhere(g.map == g.GOAL))
+
         v = ValueIterationPlanner(g)
         traj = v.plan(max_depth=100)
         
@@ -35,11 +54,11 @@ def runPolicies(demonstrations=100,
         for t in traj:
             a = np.zeros(shape=(4,1))
 
-            s = np.zeros(shape=(2,1))
+            s = np.zeros(shape=(10,20))
 
             a[t[1]] = 1
 
-            s[0:2,0] =  t[0]
+            s[t[0][0],t[0][1]] = 1
             #s[2:4,0] = np.argwhere(g.map == g.START)[0]
             #s[4:6,0] = np.argwhere(g.map == g.GOAL)[0]
 
@@ -48,18 +67,22 @@ def runPolicies(demonstrations=100,
         full_traj.append(new_traj)
         vis_traj.extend(new_traj)
 
+    #raise ValueError("")
+
     #g.visualizePlan(vis_traj,blank=True, filename="resources/results/exp1-trajs.png")
 
 
+    m.sess.run(tf.initialize_all_variables())
 
-    opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    with tf.variable_scope("optimizer"):
+        opt = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
 
-    m.train(opt, full_traj, super_iterations, sub_iterations)
+        m.train(opt, full_traj, super_iterations, sub_iterations)
 
     actions = np.eye(4)
 
 
-    g = GridWorldEnv(copy.copy(gmap), noise=0.0)
+    g = GridWorldEnv(copy.copy(gmap), noise=0.1)
     g.generateRandomStartGoal()
 
     for i in range(m.k):
@@ -69,8 +92,9 @@ def runPolicies(demonstrations=100,
 
         for s in states:
 
-            t = np.zeros(shape=(2,1))
-            t[0:2,0] = s
+            t = np.zeros(shape=(10,20))
+
+            t[s[0],s[1]] = 1
             #t[2:4,0] = np.argwhere(g.map == g.START)[0]
             #t[4:6,0] = np.argwhere(g.map == g.GOAL)[0]
 
@@ -85,8 +109,8 @@ def runPolicies(demonstrations=100,
 
             policy_hash[s] = action
 
-            #print(transitions[i].eval(np.array(ns)))
-            trans_hash[s] = np.ravel(m.evalpsi(i, [(t, actions[1,:])] ))
+            #print("Transition: ",m.evalpsi(i, [(t, actions[1,:])]), t)
+            trans_hash[s] = np.ravel(m.evalpsi(i, [(t, actions[1,:])]))
 
         g.visualizePolicy(policy_hash, trans_hash, blank=True, filename="resources/results/exp1-policy"+str(i)+".png")
 

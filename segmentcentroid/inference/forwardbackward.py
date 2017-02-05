@@ -12,7 +12,7 @@ class ForwardBackward(object):
     with model and logging parameters, and is fit with a list of trajectories.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, boundary_conditions, prior):
         """
         This initializes the FB algorithm with a TFmodel
 
@@ -28,7 +28,16 @@ class ForwardBackward(object):
         self.Q = None
         self.B = None
 
-        self.P = np.ones((self.k, self.k))/self.k
+        
+        if prior == 'chain':
+            self.P = (np.ones((self.k, self.k))-np.eye(self.k)) / (self.k-1)
+        elif prior == 'cluster':
+            self.P = np.zeros((self.k, self.k))
+        else:
+            self.P = np.ones((self.k, self.k))
+
+
+        self.boundary_conditions = boundary_conditions
 
 
 
@@ -73,6 +82,12 @@ class ForwardBackward(object):
 
         for t in traj:
 
+            print(t[0].shape, self.model.statedim,t[1].shape, self.model.actiondim)
+
+            if (t[0].shape == self.model.statedim) and \
+                (t[1].shape == self.model.actiondim):
+                continue
+
             #allow for automatic squeezes of the last dimension
             if self.model.statedim[-1] == 1:
 
@@ -82,16 +97,19 @@ class ForwardBackward(object):
             elif self.model.statedim[-1] != 1:
 
                 if t[0].shape != self.model.statedim:
+                    print("b")
                     return False
 
             if self.model.actiondim[-1] == 1:
 
                 if t[1].shape != self.model.actiondim[:-1]:
+                    print("c")
                     return False
 
             elif self.model.actiondim[-1] != 1:
 
                 if t[1].shape != self.model.actiondim:
+                    print("d")
                     return False
 
         return True
@@ -107,9 +125,9 @@ class ForwardBackward(object):
         """
 
         self.Q = np.ones((len(X)+1, self.k) , dtype='float128')/self.k
-        self.fq = np.ones((len(X)+1, self.k) , dtype='float128')/self.k
-        self.bq = np.ones((len(X)+1, self.k), dtype='float128')/self.k
-        self.B = np.ones((len(X)+1, self.k), dtype='float128')/2
+        self.fq = np.zeros((len(X)+1, self.k) , dtype='float128')
+        self.bq = np.zeros((len(X)+1, self.k), dtype='float128')
+        self.B = np.zeros((len(X)+1, self.k), dtype='float128')
 
         self.pi = np.ones((len(X), self.k))
         self.psi = np.ones((len(X), self.k))
@@ -118,6 +136,8 @@ class ForwardBackward(object):
             for h in range(0, self.k):
                 self.pi[:,h] = self.model.evalpi(h,X)
                 self.psi[:,h] = self.model.evalpsi(h,X)
+
+                print("fb",self.pi, self.psi)
 
         
     def fitTraj(self, X):
@@ -140,22 +160,41 @@ class ForwardBackward(object):
         self.backward()
         
         Qunorm = np.add(self.fq,self.bq)
+        Bunorm = np.zeros((len(X)+1, self.k))
+        negBunorm = np.zeros((len(X)+1, self.k))
 
-        self.Qnorm = logsumexp(Qunorm, axis=1)
+        #clip when all zeros
+        Qunorm[self.allInfIndices(Qunorm),:] = np.zeros((np.sum(self.allInfIndices(Qunorm)), self.k))
 
-        self.Q = np.exp(Qunorm - self.Qnorm[:, None])  
 
         for t in range(len(self.X)):
-            update = np.exp(self.termination(t) - self.Qnorm[t])
+            update = self.termination(t)
+            negUpdate = self.negTermination(t)
 
-            #set the last/first time point to 1
-            if t != len(self.X) - 1 or t != 0:
-                self.B[t,:] = update
-            else:
-                self.B[t,:] = np.ones((1, self.k))
+            if np.sum(np.isnan(update)) >= self.k:
+                print(self.termination(t))
+                raise ValueError("Error!!")
+
+            Bunorm[t, :] = update
+            negBunorm[t,:] = negUpdate
+
+        normalizationQ = logsumexp(Qunorm, axis=1)
+        normalizationB = logsumexp(np.concatenate((Bunorm, negBunorm), axis=1), axis=1)
+        
+        self.Q = np.exp(Qunorm - normalizationQ[:,None])
+        self.B = np.exp(Bunorm - normalizationB[:,None])
+
+
+        #apply boundary conditions
+        self.B[len(X)-1:,:] = self.Q[len(X)-1:,:]*self.boundary_conditions[1]
+
+        self.B[0,:] = np.ones((1,self.k))*self.boundary_conditions[0]
+
 
         return self.Q[0:len(X),:], self.B[0:len(X),:], self.P
 
+    def allInfIndices(self, Q):
+        return np.sum(np.isinf(Q), axis=1) >= self.k
 
     def forward(self):
         """
@@ -165,7 +204,7 @@ class ForwardBackward(object):
         #initialize table
         forward_dict = {}
         for h in range(self.k):
-            forward_dict[(0,h)] = 0
+            forward_dict[(0,h)] = np.log(1.0/self.k)
 
         #dynamic program
         for cur_time in range(len(self.X)):
@@ -192,7 +231,7 @@ class ForwardBackward(object):
         #initialize table
         backward_dict = {}
         for h in range(self.k):
-            backward_dict[(len(self.X)-1,h)] = 0
+            backward_dict[(len(self.X)-1,h)] = np.log(1.0/self.k)
 
         rt = np.arange(len(self.X)-2, -1, -1)
 
@@ -239,6 +278,35 @@ class ForwardBackward(object):
                            np.log(self.psi[t,h]) + \
                            self.bq[t+1,hp] \
                            for hp in range(self.k)
+                          ])
+
+        return [termination[h] for h in range(self.k)]
+
+
+    def negTermination(self, t):
+        """
+        This function calculates B for a particular time step
+        """
+
+        state = self.X[t][0]
+            
+        if t+1 == len(self.X):
+            next_state = state
+        else:
+            next_state = self.X[t+1][0]
+
+        action = self.X[t][1]
+
+
+        termination = {}
+
+        for h in range(self.k):
+
+            termination[h] = \
+                logsumexp([self.fq[t,h] + \
+                           np.log(self.pi[t,h]) + \
+                           np.log(1-self.psi[t,h]) + \
+                           self.bq[t+1,h]
                           ])
 
         return [termination[h] for h in range(self.k)]

@@ -14,13 +14,13 @@ class JHUJigSawsMultimodalModel(TFLayeredModel):
                  k,
                  statedim=(120, 160, 3), 
                  actiondim=(37,1),
-                 hidden_layer=64,
-                 variance=10000):
+                 hidden_layer=16,
+                 variance=100000):
 
         self.hidden_layer = hidden_layer
         self.variance = variance
         
-        super(JHUJigSawsMultimodalModel, self).__init__(statedim, (64,1) , actiondim, k)
+        super(JHUJigSawsMultimodalModel, self).__init__(statedim, (32,1) , actiondim, k)
 
 
     def createPolicyNetwork(self):
@@ -29,15 +29,12 @@ class JHUJigSawsMultimodalModel(TFLayeredModel):
         #              self.actiondim[0],
         #              self.variance)  
 
-        return affine(self.statedim[0],
-                      self.actiondim[0],
-                      variance=self.variance) 
+        return continuousTwoLayerReLU(self.statedim[0], self.actiondim[0], variance=self.variance) 
 
     def createTransitionNetwork(self):
 
-        return multiLayerPerceptron(self.statedim[0],
-                                    2,
-                                    self.hidden_layer)
+        return multiLayerPerceptron(self.statedim[0], 2)
+        #return logisticRegression(self.statedim[0], 2)
 
 
     def createUnsupervisedNetwork(self):
@@ -46,8 +43,13 @@ class JHUJigSawsMultimodalModel(TFLayeredModel):
 
     def preloader(self, traj):
         #only video
-
-        return [(t[0][1].astype("float32"), t[1]) for t in traj]
+        output = []
+        for i,t in enumerate(traj):
+          output.append((t[0][1].astype("float32"), t[1]))
+          #output.append((t[0][1].astype("float32"), (i+0.0)/len(traj)))
+          #output.append((np.fliplr(t[0][1].astype("float32")), t[1]))
+          #output.append((np.flipud(t[0][1].astype("float32")), t[1]))
+        return output
 
 
 

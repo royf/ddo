@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 """
 This file is meant to be a model-zoo like file that creates 
@@ -48,11 +49,11 @@ def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
 
     output = tf.matmul(h1, W_out) + b_out
 
-    logprob = tf.reduce_sum((output-a)**2, 1)
+    logprob = tf.reduce_sum((output-a)**2, 1)/variance
 
-    y = tf.exp(-logprob/variance)
+    y = tf.exp(-logprob)
 
-    wlogprob = weight*logprob
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
     return {'state': x, 
                 'action': a, 
@@ -84,11 +85,12 @@ def logisticRegression(sdim, adim):
     b_1 = tf.Variable(tf.random_normal([adim]))
         
     logit = tf.matmul(x, W_h1) + b_1
+
     y = tf.nn.softmax(logit)
 
     logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
-    wlogprob = weight*logprob
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
     return {'state': x, 
                 'action': a, 
@@ -126,6 +128,8 @@ def multiLayerPerceptron(sdim,
     b_1 = tf.Variable(tf.random_normal([hidden_layer]))
     h1 = tf.nn.sigmoid(tf.matmul(x, W_h1) + b_1)
 
+    #h1 = tf.nn.dropout(h1, 0.5)
+
     W_out = tf.Variable(tf.random_normal([hidden_layer, adim]))
     b_out = tf.Variable(tf.random_normal([adim]))
         
@@ -134,7 +138,7 @@ def multiLayerPerceptron(sdim,
 
     logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
 
-    wlogprob = weight*logprob
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
     return {'state': x, 
                 'action': a, 
@@ -178,7 +182,7 @@ def gaussianMean(sdim, adim, variance, scale):
 
         logprob = tf.nn.softmax_cross_entropy_with_logits(tf.transpose(y), a)
 
-        wlogprob = weight*logprob
+        wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
         return {'state': x, 
                 'action': a, 
@@ -188,6 +192,8 @@ def gaussianMean(sdim, adim, variance, scale):
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': True}
+
+
 
 def affine(sdim, adim, variance):
     """
@@ -213,16 +219,60 @@ def affine(sdim, adim, variance):
 
     output = tf.matmul(x, W_h1) + b_1
 
-    logprob = tf.reduce_sum((output-a)**2, 1)
+    logprob = tf.reduce_sum((output-a)**2, 1)/variance
 
-    y = tf.exp(-logprob/variance)
+    y = tf.exp(-logprob)
 
-    wlogprob = weight*logprob
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
     return {'state': x, 
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'lprob': logprob,
+                'wlprob': wlogprob,
+                'discrete': False}
+
+
+def gridWorldTabular(xcard, ycard, adim):
+    """
+    This function creates a linear regression network that takes states and
+    regresses to actions. It is based on a gated relu.
+
+    Positional arguments:
+    sdim -- int dimensionality of the state-space
+    adim -- int dimensionality of the action-space
+    variance -- float scaling for the probability calculation
+    
+    """
+
+    x = tf.placeholder(tf.float32, shape=[None, xcard, ycard])
+
+    a = tf.placeholder(tf.float32, shape=[None, adim])
+
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+    table = tf.Variable(tf.abs(tf.random_normal([xcard, ycard, adim])))
+
+    inputx = tf.tile(tf.reshape(x, [-1, xcard, ycard, 1]), [1, 1, 1, adim])
+
+    collapse = tf.reduce_sum(tf.reduce_sum(tf.multiply(inputx, table), 1), 1)
+
+    normalization = tf.reduce_sum(tf.abs(collapse),1)
+    
+    actionsP = tf.abs(collapse) / tf.tile(tf.reshape(normalization, [-1, 1]), [1, adim])
+
+    y = tf.reduce_mean(tf.multiply(a, actionsP), 1)
+
+    logprob = -tf.log1p(y)
+
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
+        
+    return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'debug': tf.multiply(a, actionsP),
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': False}

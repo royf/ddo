@@ -24,20 +24,18 @@ class JHUJigSawsModel(TFSeparableModel):
 
     def createPolicyNetwork(self):
 
-        #return affine(self.statedim[0],
-        #              self.actiondim[0],
-        #              self.variance)  
+        return affine(self.statedim[0], self.actiondim[0], self.variance)  
 
-        return continuousTwoLayerReLU(self.statedim[0],
-                                      self.actiondim[0],
-                                      self.variance) 
+        #return continuousTwoLayerReLU(self.statedim[0],
+                                      #self.actiondim[0],
+                                      #self.variance) 
 
     def createTransitionNetwork(self):
 
-        return logisticRegression(self.statedim[0], 2)
-        #return  multiLayerPerceptron(self.statedim[0],
-        #                            2,
-        #                            self.hidden_layer)
+        #return logisticRegression(self.statedim[0], 2)
+        return  multiLayerPerceptron(self.statedim[0],
+                                    2,
+                                    self.hidden_layer)
 
 
 

@@ -14,7 +14,9 @@ class TFSeparableModel(TFModel):
     def __init__(self, 
                  statedim, 
                  actiondim, 
-                 k):
+                 k,
+                 boundary_conditions,
+                 prior):
         """
         Create a model from the parameters
 
@@ -27,7 +29,7 @@ class TFSeparableModel(TFModel):
         self.policy_networks = []
         self.transition_networks = []
 
-        super(TFSeparableModel, self).__init__(statedim, actiondim, k)
+        super(TFSeparableModel, self).__init__(statedim, actiondim, k, boundary_conditions, prior)
 
 
     def getLossFunction(self):
@@ -52,7 +54,7 @@ class TFSeparableModel(TFModel):
                             self.transition_networks[i]['action'], 
                             self.transition_networks[i]['weight']))
 
-        return tf.reduce_sum(loss_array), pi_vars, psi_vars
+        return tf.reduce_sum(loss_array), pi_vars, psi_vars, loss_array
 
 
 
@@ -81,22 +83,39 @@ class TFSeparableModel(TFModel):
 
         if self.policy_networks[index]['discrete']:
             return np.sum(np.multiply(dist,a), axis=1)
+
+
+        dista = self.sess.run(self.policy_networks[index]['lprob'], feed_dict)
+
+        #print("predpi", dista)
+
+        #print("predpi", dist)
         
         return dist
             
 
     #returns a probability distribution over actions
     def _evalpsi(self, index, s):
-        feed_dict = {self.transition_networks[index]['state']: s}
+
+        dummyAction = np.zeros((s.shape[0], 2))
+        dummyAction[:,1] = 1
+
+        feed_dict = {self.transition_networks[index]['state']: s, 
+                     self.transition_networks[index]['action']: dummyAction}
         #print(s)
         dist = self.sess.run(self.transition_networks[index]['prob'], feed_dict)
 
-        #print(dist)
+        #dista = self.sess.run(self.transition_networks[index]['lprob'], feed_dict)
 
-        if not self.transition_networks[index]['discrete']:
-            raise ValueError("Transition function must be discrete")
+        print("predpsi", np.argwhere(s==1), dist)
 
-        return dist[:,1]
+        #if not self.transition_networks[index]['discrete']:
+        #    raise ValueError("Transition function must be discrete")
+
+        if len(dist.shape) == 1:
+            return dist
+        else:
+            return dist[:,1]
 
 
 

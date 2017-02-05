@@ -11,24 +11,21 @@ class GridWorldModel(TFSeparableModel):
                  k,
                  statedim=(2,1), 
                  actiondim=(4,1), 
-                 hidden_layer=32):
+                 hidden_layer=8):
 
         self.hidden_layer = hidden_layer
         
-        super(GridWorldModel, self).__init__(statedim, actiondim, k)
+        super(GridWorldModel, self).__init__(statedim, actiondim, k, [0,1], 'cluster')
 
 
     def createPolicyNetwork(self):
 
-        return multiLayerPerceptron(self.statedim[0], 
-                                    self.actiondim[0],
-                                    self.hidden_layer)
+        #return multiLayerPerceptron(self.statedim[0], self.actiondim[0])
+        return gridWorldTabular(10, 20, 4)
 
     def createTransitionNetwork(self):
 
-        return multiLayerPerceptron(self.statedim[0], 
-                                    2,
-                                    self.hidden_layer)
+        return gridWorldTabular(10, 20, 2)
 
         
 

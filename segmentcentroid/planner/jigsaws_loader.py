@@ -9,11 +9,16 @@ from .AbstractPlanner import *
 
 class JigsawsPlanner(AbstractPlanner):
 
-    def __init__(self, kdirectory, arms=['left', 'right'], vdirectory=None):
+    def __init__(self, 
+                 kdirectory, 
+                 arms=['left', 'right'], 
+                 vdirectory=None,
+                 gtdirectory=None):
 
         #declaring variables that should be set
         self.directory = kdirectory
         self.vdirectory = vdirectory
+        self.gtdirectory = gtdirectory
 
         self.arms = arms
 
@@ -44,10 +49,23 @@ class JigsawsPlanner(AbstractPlanner):
         files = [f for f in listdir(self.directory) if isfile(join(self.directory, f))]
         index = np.random.choice(len(files))
         
-        f = open(self.directory+"/"+files[index], "rb")
+        f = open(self.directory+"/"+files[index], "r")
 
         lines = f.readlines()
         states = [np.array([float(li) for li in l.split()][self.START:self.END]) for l in lines]
+
+        #print(states[0].shape[0])
+
+        #median filter
+        for i in range(0, len(states)):
+            wsize = 5
+            window = range(i, min(i+wsize, len(states)))
+            filstate = np.zeros((states[i].shape[0],wsize))
+            for j,w in enumerate(window):
+                filstate[:,j] = states[w]
+            states[i] = np.median(filstate,axis=1)
+
+        #print(states[i].shape[0])
 
 
         if self.vdirectory != None:
@@ -83,7 +101,10 @@ class JigsawsPlanner(AbstractPlanner):
             for t in range(1, max_depth):
                 xt = (states[t-1], videos[t-1+offset])
                 xtp = states[t]
-                traj.append((xt, xtp-states[t-1]))
+
+                a = xtp-states[t-1]
+
+                traj.append((xt, a))
         else:
 
             if max_depth == -1:
@@ -96,13 +117,27 @@ class JigsawsPlanner(AbstractPlanner):
             for t in range(1, max_depth):
                 xt = states[t-1]
                 xtp = states[t]
-                traj.append((xt, xtp-states[t-1]))
+                a = xtp-states[t-1]
+
+                traj.append((xt, a))
 
         
-        return traj
+        f.close()
+
+        if self.gtdirectory != None:
+            demoname = files[index].split('.')[0]
+            f = open(self.gtdirectory+"/"+files[index], "r")
+            lines = [l for l in f.readlines()] #only detect suturing starts
+
+            #print([int(l.strip().split()[1]) for l in lines if 'G14' in l.strip().split()[2] ])
+
+            return traj, [int(l.strip().split()[1]) for l in lines]
+        
+        else:
+            return traj
 
 
-    def visualizePlans(self, trajs, model, filename=None):
+    def visualizePlans(self, trajs, model, filename=None, ground_truth=None):
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
 
@@ -114,7 +149,10 @@ class JigsawsPlanner(AbstractPlanner):
 
             for s in segset:
 
-                plt.scatter(segset[s], segset[s]*0 + i, color=colors[s,:])
+                plt.scatter(segset[s], segset[s]*0 + i, color=colors[s],marker='.')
+
+            if ground_truth != None:
+                plt.scatter(ground_truth[i], np.ones((len(ground_truth[i]),1))*i, marker='x')
 
         if filename == None:
             plt.show()
