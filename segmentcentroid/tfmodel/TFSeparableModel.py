@@ -107,7 +107,7 @@ class TFSeparableModel(TFModel):
 
         #dista = self.sess.run(self.transition_networks[index]['lprob'], feed_dict)
 
-        print("predpsi", np.argwhere(s==1), dist)
+        #print("predpsi", np.argwhere(s==1), dist)
 
         #if not self.transition_networks[index]['discrete']:
         #    raise ValueError("Transition function must be discrete")
