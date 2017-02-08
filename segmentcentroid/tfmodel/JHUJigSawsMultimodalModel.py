@@ -1,10 +1,10 @@
-from .TFLayeredModel import TFLayeredModel
+from .TFSeparableModel import TFSeparableModel
 from .unsupervised_vision_networks import *
 from .supervised_networks import *
 import tensorflow as tf
 import numpy as np
 
-class JHUJigSawsMultimodalModel(TFLayeredModel):
+class JHUJigSawsMultimodalModel(TFSeparableModel):
     
     """
     This class defines the abstract class for a tensorflow model for the primitives.
@@ -13,32 +13,28 @@ class JHUJigSawsMultimodalModel(TFLayeredModel):
     def __init__(self,  
                  k,
                  statedim=(120, 160, 3), 
-                 actiondim=(37,1),
+                 actiondim=(8,1),
                  hidden_layer=16,
-                 variance=100000):
+                 variance=10000):
 
         self.hidden_layer = hidden_layer
         self.variance = variance
         
-        super(JHUJigSawsMultimodalModel, self).__init__(statedim, (32,1) , actiondim, k)
+        super(JHUJigSawsMultimodalModel, self).__init__(statedim, actiondim, k, [0,1], 'chain')
 
 
     def createPolicyNetwork(self):
 
-        #return affine(self.statedim[0],
-        #              self.actiondim[0],
-        #              self.variance)  
+        return conv2affine(self.statedim,
+                      self.actiondim[0],
+                      self.variance)  
 
-        return continuousTwoLayerReLU(self.statedim[0], self.actiondim[0], variance=self.variance) 
+        #return continuousTwoLayerReLU(self.statedim[0], self.actiondim[0], variance=self.variance) 
 
     def createTransitionNetwork(self):
 
-        return multiLayerPerceptron(self.statedim[0], 2)
-        #return logisticRegression(self.statedim[0], 2)
-
-
-    def createUnsupervisedNetwork(self):
-        return twoLayerAutoencoder([120, 160, 3], 37)
+        #return multiLayerPerceptron(self.statedim[0], 2)
+        return conv2mlp(self.statedim, 2)
 
 
     def preloader(self, traj):
@@ -50,6 +46,12 @@ class JHUJigSawsMultimodalModel(TFLayeredModel):
           #output.append((np.fliplr(t[0][1].astype("float32")), t[1]))
           #output.append((np.flipud(t[0][1].astype("float32")), t[1]))
         return output
+
+
+    def dataTransformer(self, traj):
+        Xm, Am = self.formatTrajectory(self.preloader(traj))
+
+        return [ (Xm[i,:] , Am[i,:]) for i,t in enumerate(traj)]
 
 
 

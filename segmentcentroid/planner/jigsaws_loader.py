@@ -11,7 +11,6 @@ class JigsawsPlanner(AbstractPlanner):
 
     def __init__(self, 
                  kdirectory, 
-                 arms=['left', 'right'], 
                  vdirectory=None,
                  gtdirectory=None):
 
@@ -20,42 +19,26 @@ class JigsawsPlanner(AbstractPlanner):
         self.vdirectory = vdirectory
         self.gtdirectory = gtdirectory
 
-        self.arms = arms
-
-        if arms == ['left', 'right']:
-            self.START = 39
-            self.END = 76
-
-        elif 'left' in arms:
-            self.START = 39
-            self.END = 58
-
-        elif 'right' in arms:
-            self.START = 58
-            self.END = 76
-
-        else:
-
-            raise ValueError("Invalid Arm Config")
-
-
         super(JigsawsPlanner, self).__init__(None)
 
 
     """
     This function returns a trajectory [(s,a) tuples]
     """
-    def plan(self, max_depth=-1, start=None):
+    def plan(self, max_depth=-1, sampling=30, start=None):
         files = [f for f in listdir(self.directory) if isfile(join(self.directory, f))]
         index = np.random.choice(len(files))
         
         f = open(self.directory+"/"+files[index], "r")
 
+        mask = set([38,39,40,56,57,58,59,75])
+
         lines = f.readlines()
-        states = [np.array([float(li) for li in l.split()][self.START:self.END]) for l in lines]
+        states = [np.array([float(li) for i, li in enumerate(l.split()) if i in mask]) for l in lines]
 
         #print(states[0].shape[0])
 
+        """
         #median filter
         for i in range(0, len(states)):
             wsize = 5
@@ -64,6 +47,7 @@ class JigsawsPlanner(AbstractPlanner):
             for j,w in enumerate(window):
                 filstate[:,j] = states[w]
             states[i] = np.median(filstate,axis=1)
+        """
 
         #print(states[i].shape[0])
 
@@ -98,11 +82,13 @@ class JigsawsPlanner(AbstractPlanner):
 
             traj = []
 
-            for t in range(1, max_depth):
-                xt = (states[t-1], videos[t-1+offset])
+            for t in range(sampling, max_depth, sampling):
+
+                xt = (states[t], videos[t+offset])
                 xtp = states[t]
 
-                a = xtp-states[t-1]
+                a = xtp-states[t-sampling]
+                print(a)
 
                 traj.append((xt, a))
         else:

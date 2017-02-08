@@ -12,14 +12,14 @@ class JHUJigSawsModel(TFSeparableModel):
     def __init__(self,  
                  k,
                  statedim=(37,1), 
-                 actiondim=(37,1),
+                 actiondim=(8,1),
                  hidden_layer=64,
                  variance=10000):
 
         self.hidden_layer = hidden_layer
         self.variance = variance
         
-        super(JHUJigSawsModel, self).__init__(statedim, actiondim, k)
+        super(JHUJigSawsModel, self).__init__(statedim, actiondim, k, [0,1],'chain')
 
 
     def createPolicyNetwork(self):

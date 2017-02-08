@@ -226,13 +226,14 @@ class TFModel(object):
 
         trajectory = self.trajectory_cache[traj_index]
 
-        weights = (np.zeros((len(X[traj_index]), self.k)), np.zeros((len(X[traj_index]), self.k)))
+        weights = (np.zeros((len(X[traj_index]), self.k)), np.ones((len(X[traj_index]), self.k)))
 
         for i,t in enumerate(trajectory):
             state = t[0].reshape(1,-1)
 
-            index = initializationModel.predict(state)
+            index = initializationModel.predict(state)#int(i/ ( len(trajectory)/self.k ))
             weights[0][i, index] = 1
+            weights[1][i, index] = 0
 
         feed_dict = {}
         Xm, Am = self.formatTrajectory(trajectory)
@@ -408,10 +409,12 @@ class TFModel(object):
 
         for x in X:
             trajectory = self.dataTransformer(x)
+            #print([t[0]  for t in trajectory])
+
             state_action_array.extend([ np.ravel(t[0].reshape(1, -1))  for t in trajectory])
         
 
-        kmeans = KMeans(n_clusters=self.k)
+        kmeans = KMeans(n_clusters=self.k, init ='k-means++')
         kmeans.fit(state_action_array)
 
         """
@@ -427,7 +430,7 @@ class TFModel(object):
         for i in range(vqiterations):
             batch = self.sampleInitializationBatch(X, vqbatchsize, kmeans)
             self.sess.run(self.optimizer, batch)
-            #print("a",self.sess.run(self.loss, batch))
+            print("VQ Loss",self.sess.run(self.loss, batch))
             #print("b",self.sess.run(self.lossa[0], batch))
             #print("b1",self.sess.run(self.lossa[0], batch).shape)
             #print("c",self.sess.run(self.lossa[self.k], batch))

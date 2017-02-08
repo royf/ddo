@@ -79,12 +79,15 @@ class GridWorldEnv(AbstractEnv):
 
     #helper method returns the terminal state
     def isTerminal(self, s=None):
+
         if s is None:
             s = self.state
+        
         if self.map[s[0], s[1]] == self.GOAL:
             return True
         if self.map[s[0], s[1]] == self.PIT:
             return True
+        
         return False
 
 
@@ -131,8 +134,6 @@ class GridWorldEnv(AbstractEnv):
     This function takes an action
     """
     def play(self, a):
-
-
         #throws an error if you are stupid
         if a not in self.possibleActions():
             raise ValueError("Invalid Action!!")
@@ -167,6 +168,8 @@ class GridWorldEnv(AbstractEnv):
         self.time = self.time + 1
         self.reward = self.reward + r
         self.termination = self.isTerminal()
+        
+        return r
 
     """
     This function rolls out a policy which is a map from state to action
@@ -224,9 +227,6 @@ class GridWorldEnv(AbstractEnv):
                         dynamics[(s,a)].append( (expected_step, self.NOISE/(len(possibleActions)-1)))                        
 
         return dynamics
-
-
-
 
     ###visualization routines
     def visualizePolicy(self, policy, transitions=None, blank=False, filename=None):

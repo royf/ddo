@@ -1,5 +1,8 @@
 import tensorflow as tf
 import numpy as np
+import random
+import string
+import tensorflow.contrib.slim as slim
 
 """
 This file is meant to be a model-zoo like file that creates 
@@ -59,6 +62,7 @@ def continuousTwoLayerReLU(sdim, adim, variance, hidden_layer=64):
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'amax': output,
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': False}
@@ -96,6 +100,7 @@ def logisticRegression(sdim, adim):
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'amax': tf.argmax(y, 1),
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': True}
@@ -144,55 +149,95 @@ def multiLayerPerceptron(sdim,
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'amax': tf.argmax(y, 1),
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': True}
 
 
-def gaussianMean(sdim, adim, variance, scale):
+def conv2affine(sdim, adim, variance, _hiddenLayer=32):
+    code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
 
-        """
-        This function creates creates a gaussian ellipsoid centered
-        at a mean
+    sarraydims = [s for s in sdim]
+    sarraydims.insert(0, None)
 
-        Positional arguments:
-        sdim -- int dimensionality of the state-space
-        adim -- int dimensionality of the action-space
-        variance -- float scaling for the probability calculation
-        scale -- float the scaling for the initialization
+    x = tf.placeholder(tf.float32, shape=sarraydims)
 
-        """
+    a = tf.placeholder(tf.float32, shape=[None, adim])
 
-        if adim != 2:
-            raise ValueError("Gaussian only apply to binary")
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
 
-        x = tf.placeholder(tf.float32, shape=[None, sdim])
+    net = slim.conv2d(x, 64, [11, 11], 4, padding='VALID', scope='conv1'+code)
+    #net = slim.conv2d(net, 192, [5, 5], scope='conv2'+code)
+    #net = slim.conv2d(net, 384, [3, 3], scope='conv3'+code)
 
-        #must be one-hot encoded
-        a = tf.placeholder(tf.float32, shape=[None, 2])
+    net = slim.flatten(net)
+    W1 = tf.Variable(tf.random_normal([68096, _hiddenLayer]))
+    b1 = tf.Variable(tf.random_normal([_hiddenLayer]))
+    output = tf.nn.sigmoid(tf.matmul(net, W1) + b1)
+    #output= tf.nn.dropout(output, dropout)
 
-        #must be a scalar
-        weight = tf.placeholder(tf.float32, shape=[None, 1])
+    W2 = tf.Variable(tf.random_normal([_hiddenLayer, adim]))
+    b2 = tf.Variable(tf.random_normal([adim]))
+
+    output = tf.nn.sigmoid(tf.matmul(output, W2) + b2)
+
+    logprob = tf.reduce_sum((output-a)**2, 1)/variance
+
+    y = tf.exp(-logprob)
+
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
-        mu = scale*tf.Variable(tf.random_uniform([1,sdim]))
-        N= tf.shape(x)
-        MU = tf.tile(mu, [N[0],1])
-
-        y = [1-tf.exp(-tf.reduce_sum( tf.abs(x-MU), 1)/variance), tf.exp(-tf.reduce_sum( tf.abs(x-MU), 1)/variance)]
-
-        logprob = tf.nn.softmax_cross_entropy_with_logits(tf.transpose(y), a)
-
-        wlogprob = tf.multiply(tf.transpose(weight), logprob)
-        
-        return {'state': x, 
+    return {'state': x, 
                 'action': a, 
                 'weight': weight,
-                'mu':mu,
                 'prob': y, 
+                'amax':output,
+                'lprob': logprob,
+                'wlprob': wlogprob,
+                'discrete': False}
+
+def conv2mlp(sdim, adim, _hiddenLayer=32):
+    code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+    sarraydims = [s for s in sdim]
+    sarraydims.insert(0, None)
+
+    x = tf.placeholder(tf.float32, shape=sarraydims)
+
+    a = tf.placeholder(tf.float32, shape=[None, adim])
+
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+    net = slim.conv2d(x, 64, [11, 11], 4, padding='VALID', scope='conv1'+code)
+    #net = slim.conv2d(net, 192, [5, 5], scope='conv2'+code)
+    #net = slim.conv2d(net, 384, [3, 3], scope='conv3'+code)
+
+    net = slim.flatten(net)
+    W1 = tf.Variable(tf.random_normal([68096, _hiddenLayer]))
+    b1 = tf.Variable(tf.random_normal([_hiddenLayer]))
+    output = tf.nn.sigmoid(tf.matmul(net, W1) + b1)
+    #output= tf.nn.dropout(output, dropout)
+
+    W2 = tf.Variable(tf.random_normal([_hiddenLayer, adim]))
+    b2 = tf.Variable(tf.random_normal([adim]))
+
+    logit = tf.matmul(output, W2) + b2
+
+    y = tf.nn.softmax(logit)
+
+    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
+        
+    return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'amax': tf.argmax(y, 1),
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': True}
-
 
 
 def affine(sdim, adim, variance):
@@ -229,6 +274,7 @@ def affine(sdim, adim, variance):
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'amax':output,
                 'lprob': logprob,
                 'wlprob': wlogprob,
                 'discrete': False}
@@ -272,6 +318,7 @@ def gridWorldTabular(xcard, ycard, adim):
                 'action': a, 
                 'weight': weight,
                 'prob': y, 
+                'amax': tf.argmax(actionsP, 1),
                 'debug': tf.multiply(a, actionsP),
                 'lprob': logprob,
                 'wlprob': wlogprob,
