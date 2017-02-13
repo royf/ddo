@@ -11,7 +11,7 @@ class DQN(object):
                  env,
                  statedim,
                  actiondim,
-                 buffersize = 1e5,
+                 buffersize = 100000,
                  gamma = 0.99,
                  learning_rate = 0.1,
                  minibatch=100,
@@ -57,6 +57,7 @@ class DQN(object):
         return self.sess.run(self.network['alloutput'], feedDict)
 
     def argmax(self, S):
+        #print(np.argmax(self.eval(S), axis=1))
         return np.argmax(self.eval(S), axis=1)
 
     def max(self, S):
@@ -111,7 +112,7 @@ class DQN(object):
         for episode in range(episodes):
 
             if len(self.replay_buffer) > self.buffersize:
-                self.replay_buffer = self.replay_buffer[-self.buffersize]
+                self.replay_buffer = self.replay_buffer[-self.buffersize:]
 
 
             self.env.init()
@@ -146,15 +147,17 @@ class DQN(object):
                                           'reward': reward,
                                           'done': False})
 
-            print("Episode", episode, (reward, step, epsilon))
-            self.results_array.append((reward, step, epsilon))
-
             S, A, Y = self.sample_batch(self.minibatch)
 
             self.sess.run(minimizer, {self.network['state']: S, 
                                    self.network['action']: A,
                                    self.network['y']: Y}) 
 
+            batch_loss = self.sess.run(self.network['woutput'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y})
+
+
+            print("Episode", episode, (self.env.reward, step, epsilon, batch_loss))
+            self.results_array.append((self.env.reward, step, epsilon, batch_loss))
 
 
 class TabularDQN(DQN):
@@ -211,13 +214,3 @@ class TabularDQN(DQN):
         sp = np.zeros(shape=sarraydims)
         sp[0, s[0],s[1]] =  1
         return sp
-
-
-
-
-
-
-
-
-
-
