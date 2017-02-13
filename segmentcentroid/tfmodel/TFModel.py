@@ -51,6 +51,10 @@ class TFModel(object):
 
         self.trajectory_cache = {}
 
+        with tf.variable_scope("optimizer"):
+            self.opt = tf.train.AdamOptimizer(learning_rate=0.001)
+            self.loss, self.optimizer, self.init, self.pivars, self.psivars, self.lossa = self.getOptimizationVariables(self.opt)
+
 
     def initialize(self):
         """
@@ -184,12 +188,12 @@ class TFModel(object):
         now  = datetime.datetime.now()
         trajectory = self.trajectory_cache[traj_index]
 
-        print("Time", datetime.datetime.now()-now)
+        #print("Time", datetime.datetime.now()-now)
 
         now  = datetime.datetime.now()
         weights = self.fb.fit([trajectory])
 
-        print("Time", datetime.datetime.now()-now)
+        #print("Time", datetime.datetime.now()-now)
 
         feed_dict = {}
         Xm, Am = self.formatTrajectory(trajectory)
@@ -339,12 +343,10 @@ class TFModel(object):
         opt -- is the chosen optimizer to use
         """
 
-        self.loss, self.optimizer, self.init, self.pivars, self.psivars, self.lossa = self.getOptimizationVariables(opt)
-        #self.gradients = opt.compute_gradients(self.loss, tf.trainable_variables())
-
+        self.gradients = opt.compute_gradients(self.loss)
         self.sess.run(self.init)
         self.initialized = True
-        tf.get_default_graph().finalize()
+        #tf.get_default_graph().finalize()
 
 
     def train(self, opt, X, iterations, vqiterations=100, vqbatchsize=25):
@@ -373,13 +375,13 @@ class TFModel(object):
             
         for it in range(iterations):
 
-            if it % self.checkpoint_freq == 0:
-                print("Checkpointing Train", it, self.checkpoint_file)
-                self.save()
+            #if it % self.checkpoint_freq == 0:
+                #print("Checkpointing Train", it, self.checkpoint_file)
+                #self.save()
 
             batch = self.sampleBatch(X)
 
-            print("Iteration", it, np.argmax(self.fb.Q,axis=1))
+            #print("Iteration", it, np.argmax(self.fb.Q,axis=1))
     
             import datetime
             now = datetime.datetime.now()
@@ -393,11 +395,12 @@ class TFModel(object):
             self.sess.run(self.optimizer, batch)
 
             #print("Time", datetime.datetime.now()-now)
-            print(self.fb.B)
+            #print(self.fb.B)
             #    print("Loss",self.sess.run(self.transition_networks[0]['lprob'], batch))
 
+            gradients_materialized = self.sess.run(self.gradients, batch)
 
-            #return self.sess.run(self.gradients, batch)
+            return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
 
 
     def runVectorQuantization(self, X, vqiterations, vqbatchsize):

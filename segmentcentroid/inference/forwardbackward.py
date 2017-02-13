@@ -82,7 +82,7 @@ class ForwardBackward(object):
 
         for t in traj:
 
-            print(t[0].shape, self.model.statedim,t[1].shape, self.model.actiondim)
+            #print(t[0].shape, self.model.statedim,t[1].shape, self.model.actiondim)
 
             if (t[0].shape == self.model.statedim) and \
                 (t[1].shape == self.model.actiondim):
@@ -137,7 +137,7 @@ class ForwardBackward(object):
                 self.pi[:,h] = self.model.evalpi(h,X)
                 self.psi[:,h] = self.model.evalpsi(h,X)
 
-                print("fb",self.pi, self.psi)
+                #print("fb",self.pi, self.psi)
 
         
     def fitTraj(self, X):
@@ -172,7 +172,7 @@ class ForwardBackward(object):
             negUpdate = self.negTermination(t)
 
             if np.sum(np.isnan(update)) >= self.k:
-                print(self.termination(t))
+                #print(self.termination(t))
                 raise ValueError("Error!!")
 
             Bunorm[t, :] = update

@@ -1,12 +1,20 @@
 #!/usr/bin/env python
+from segmentcentroid.envs.GridWorldWallsEnv import GridWorldWallsEnv
+import numpy as np
+import copy
+from segmentcentroid.planner.value_iteration import ValueIterationPlanner
+from segmentcentroid.planner.traj_utils import *
 
+MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
+gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
+g = GridWorldWallsEnv(copy.copy(gmap), noise=0.0)
+g.generateRandomStartGoal()
 
-#MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
-#gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
-#g = GridWorldWallsEnv(copy.copy(gmap), noise=0.1)
-#g.generateRandomStartGoal()
+v = ValueIterationPlanner(g)
 
+traj = v.plan(max_depth=100)
 
+g.visualizePolicy(v.policy)
 
 
 
@@ -62,6 +70,7 @@ from segmentcentroid.tfmodel.unsupervised_vision_networks import *
 import matplotlib.pyplot as plt
 import sys, traceback
 
+"""
 j = JigsawsPlanner("/Users/sanjayk/Downloads/Knot_Tying/kinematics/AllGestures/", vdirectory="/Users/sanjayk/Downloads/Knot_Tying/video/" ,gtdirectory="/Users/sanjayk/Downloads/Knot_Tying/transcriptions/")
 full_traj = []
 ground_truth = []
@@ -92,6 +101,7 @@ with tf.variable_scope("optimizer"):
 
 
 j.visualizePlans([m.dataTransformer(t) for t in full_traj], m, filename="resources/results/exp5-trajs12.png", ground_truth=ground_truth)
+"""
 
 
 """
