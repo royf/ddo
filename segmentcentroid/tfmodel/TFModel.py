@@ -400,7 +400,8 @@ class TFModel(object):
 
             gradients_materialized = self.sess.run(self.gradients, batch)
 
-            return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
+        
+        return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
 
 
     def runVectorQuantization(self, X, vqiterations, vqbatchsize):

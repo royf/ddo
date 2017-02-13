@@ -12,7 +12,7 @@ class HDQN(object):
                  env,
                  statedim,
                  actiondim,
-                 k,
+                 model,
                  buffersize = 100000,
                  gamma = 0.99,
                  learning_rate = 0.1,
@@ -23,7 +23,7 @@ class HDQN(object):
         self.statedim = statedim
         self.actiondim = actiondim
 
-        self.k = k
+        self.k = model.k
 
         self.env = env
 
@@ -57,11 +57,18 @@ class HDQN(object):
         raise NotImplemented("Must provide an observation function")
 
 
+    def translate(self, o):
+      raise NotImplemented("Must provide a translate function")
+
+
+
+
     #unpacks into action and hint
     def unpack(self, res):
-        return res % self.k, int(res/self.k)
+        return res - int(res/self.actiondim), int(res/self.actiondim)
 
     def pack(self, a, h):
+        #print(int((float(h)/self.k)*self.actiondim) + a)
         return int((float(h)/self.k)*self.actiondim) + a
 
 
@@ -178,7 +185,7 @@ class TabularHDQN(HDQN):
                  env,
                  statedim,
                  actiondim,
-                 k,
+                 model,
                  buffersize = 1e5,
                  gamma = 0.99,
                  learning_rate = 0.1,
@@ -186,7 +193,7 @@ class TabularHDQN(HDQN):
                  epsilon0=1,
                  epsilon_decay_rate=1e-3):
 
-        super(TabularHDQN, self).__init__(env, statedim, actiondim, k, buffersize, gamma, learning_rate, minibatch, epsilon0, epsilon_decay_rate)
+        super(TabularHDQN, self).__init__(env, statedim, actiondim, model, buffersize, gamma, learning_rate, minibatch, epsilon0, epsilon_decay_rate)
 
 
     def createQNetwork(self):
