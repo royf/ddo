@@ -46,9 +46,9 @@ class RegressionDQN(DQN):
         h2 = tf.nn.sigmoid(tf.matmul(h1, W_2) + b_2)
 
         W_3 = tf.Variable(tf.random_normal([self.hidden_layer, self.actiondim ]))
-        b_3 = tf.Variable(0.0*tf.random_normal([self.actiondim ]))
+        b_3 = tf.Variable(tf.random_normal([self.actiondim ]))
 
-        alloutput = tf.matmul(h2, W_3) + b_3
+        alloutput = tf.matmul(h1, W_3) + b_3
 
         output = tf.reshape(tf.reduce_mean(tf.multiply(a, alloutput), 1), [-1, 1])
 

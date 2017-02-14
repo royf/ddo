@@ -52,6 +52,17 @@ class HDQN(object):
 
         self.epsilon_decay_rate = epsilon_decay_rate
 
+        self.resultsFile = None
+
+        self.primtivesOnly = False
+
+
+    def setResultsFile(self, resultsFile, resultInfo):
+      self.resultsFile = resultsFile
+      self.resultInfo = resultInfo
+
+    def setPrimitivesOnly(self):
+        self.primtivesOnly = True
 
     def createQNetwork(self):
         raise NotImplemented("Must provide a Q network")
@@ -67,7 +78,11 @@ class HDQN(object):
 
     def eval(self, S):
         feedDict = {self.network['state']: S}
-        return self.sess.run(self.network['alloutput'], feedDict)
+
+        if self.primtivesOnly:
+          return self.sess.run(self.network['alloutput'], feedDict)[:,self.actiondim:]
+        else:
+          return self.sess.run(self.network['alloutput'], feedDict)
 
     def argmax(self, S):
         return np.argmax(self.eval(S), axis=1)
@@ -78,6 +93,9 @@ class HDQN(object):
 
     def policy(self, saction, epsilon):
         if np.random.rand(1) < epsilon:
+          if self.primtivesOnly:
+            return np.random.choice(np.arange(self.actiondim, self.actiondim+self.k))
+          else:
             return np.random.choice(np.arange(self.actiondim+self.k))
         else:
             return saction
@@ -123,6 +141,8 @@ class HDQN(object):
 
         primitive_reward = 0
 
+        intermediate_states = [self.env.state]
+
         while not done:
             actions = np.eye(self.actiondim)
 
@@ -140,7 +160,9 @@ class HDQN(object):
 
             primitive_reward = primitive_reward + reward
 
-        return prev_obs, observation, primitive_reward, remaining
+            intermediate_states.append((self.env.state, chosen_action))
+
+        return prev_obs, observation, primitive_reward, remaining, intermediate_states
 
 
     def apply_action(self, action):
@@ -176,7 +198,7 @@ class HDQN(object):
                 action = self.policy(action, epsilon)
 
                 if action >= self.actiondim:
-                  prev_obs, observation, reward, remaining_time = self.apply_primitive(action-self.actiondim, remaining_time)
+                  prev_obs, observation, reward, remaining_time, _ = self.apply_primitive(action-self.actiondim, remaining_time)
                 else:
                   prev_obs, observation, reward = self.apply_action(action)
                   remaining_time = remaining_time - 1
@@ -206,6 +228,15 @@ class HDQN(object):
                                    self.network['y']: Y}) 
 
 
+            if self.resultsFile != None \
+                and episode % 100 == 99:
+              print("Saving Data...")
+              import pickle
+              f = open(self.resultsFile, 'wb')
+              pickle.dump({'data': self.results_array, 'info': self.resultInfo}, f)
+              f.close()
+
+
 
 class TabularHDQN(HDQN):
 
@@ -214,7 +245,7 @@ class TabularHDQN(HDQN):
                  statedim,
                  actiondim,
                  model,
-                 buffersize = 1e5,
+                 buffersize = 10000,
                  gamma = 0.99,
                  learning_rate = 0.1,
                  minibatch=100,

@@ -44,6 +44,9 @@ class DQN(object):
         self.epsilon_decay_rate = epsilon_decay_rate
 
 
+    def setResultsFile(self, resultsFile, resultInfo):
+      self.resultsFile = resultsFile
+      self.resultInfo = resultInfo
 
     def createQNetwork(self):
         raise NotImplemented("Must provide a Q network")
@@ -159,6 +162,14 @@ class DQN(object):
             print("Episode", episode, (self.env.reward, step, epsilon, batch_loss))
             self.results_array.append((self.env.reward, step, epsilon, batch_loss))
 
+            if self.resultsFile != None \
+                and episode % 100 == 99:
+              print("Saving Data...")
+              import pickle
+              f = open(self.resultsFile, 'wb')
+              pickle.dump({'data': self.results_array, 'info': self.resultInfo}, f)
+              f.close()
+
 
 class TabularDQN(DQN):
 
@@ -166,7 +177,7 @@ class TabularDQN(DQN):
                  env,
                  statedim,
                  actiondim,
-                 buffersize = 1e5,
+                 buffersize = 100000,
                  gamma = 0.99,
                  learning_rate = 0.1,
                  minibatch=100,
