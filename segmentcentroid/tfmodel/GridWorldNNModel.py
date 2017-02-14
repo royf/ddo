@@ -15,7 +15,7 @@ class GridWorldNNModel(TFSeparableModel):
 
         self.hidden_layer = hidden_layer
         
-        super(GridWorldNNModel, self).__init__(statedim, actiondim, k, [0,1], 'cluster')
+        super(GridWorldNNModel, self).__init__(statedim, actiondim, k, [0,1], 'chain')
 
 
     def createPolicyNetwork(self):

@@ -272,9 +272,12 @@ class GridWorldWallsEnv(AbstractEnv):
 
             action = self.ACTIONS[policy[state]]
 
-            print(action)
+            #print(action)
 
-            alpha = 0 #transitions[state]
+            if transitions == None:
+                alpha = 0 #transitions[state]
+            else:
+                alpha = transitions[state]
 
             print(alpha, state)
 

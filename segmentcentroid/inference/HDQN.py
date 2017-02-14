@@ -21,9 +21,14 @@ class HDQN(object):
                  epsilon_decay_rate=1e-3):
 
         self.statedim = statedim
+
         self.actiondim = actiondim
 
+        self.augmentedsize = statedim[0] + actiondim
+
         self.k = model.k
+
+        self.model = model
 
         self.env = env
 
@@ -48,7 +53,6 @@ class HDQN(object):
         self.epsilon_decay_rate = epsilon_decay_rate
 
 
-
     def createQNetwork(self):
         raise NotImplemented("Must provide a Q network")
 
@@ -59,17 +63,6 @@ class HDQN(object):
 
     def translate(self, o):
       raise NotImplemented("Must provide a translate function")
-
-
-
-
-    #unpacks into action and hint
-    def unpack(self, res):
-        return res - int(res/self.actiondim), int(res/self.actiondim)
-
-    def pack(self, a, h):
-        #print(int((float(h)/self.k)*self.actiondim) + a)
-        return int((float(h)/self.k)*self.actiondim) + a
 
 
     def eval(self, S):
@@ -85,7 +78,7 @@ class HDQN(object):
 
     def policy(self, saction, epsilon):
         if np.random.rand(1) < epsilon:
-            return np.random.choice(np.arange(self.actiondim))
+            return np.random.choice(np.arange(self.actiondim+self.k))
         else:
             return saction
 
@@ -100,14 +93,14 @@ class HDQN(object):
 
         S = np.zeros(sarraydims)
         Sp = np.zeros(sarraydims)
-        A = np.zeros((size, self.actiondim*self.k))
+        A = np.zeros((size, self.augmentedsize))
         D = np.zeros((size, 1))
         R = np.zeros((size, 1))
 
         for i in range(size):
             S[i,:] = sample[i]['old_state']
             Sp[i,:] = sample[i]['new_state']
-            A[i, self.pack(sample[i]['action'], sample[i]['hint']) ] = 1 
+            A[i, sample[i]['action']] = 1 
             D[i,:] = sample[i]['done']
             R[i,:] = sample[i]['reward']
 
@@ -121,6 +114,40 @@ class HDQN(object):
                 Y[j, :] = R[j,:] + self.gamma*V[j,:]
 
         return S, A, Y
+
+
+    def apply_primitive(self, i, remaining):
+        prev_obs = self.observe(self.env.state)
+
+        done = False
+
+        primitive_reward = 0
+
+        while not done:
+            actions = np.eye(self.actiondim)
+
+            remaining = remaining - 1
+
+            l = [ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in self.env.possibleActions(self.env.state)]
+            chosen_action = self.env.possibleActions(self.env.state)[np.argmax(l)]
+            reward = self.env.play(chosen_action)
+
+            observation = self.observe(self.env.state)
+
+            termination = (np.random.rand() < np.ravel(self.model.evalpsi(i, [(self.env.state, actions[1,:])])))
+
+            done = self.env.termination or termination or remaining <= 0
+
+            primitive_reward = primitive_reward + reward
+
+        return prev_obs, observation, primitive_reward, remaining
+
+
+    def apply_action(self, action):
+        prev_obs = self.observe(self.env.state)
+        reward = self.env.play(action)
+        observation = self.observe(self.env.state)
+        return prev_obs, observation, reward
 
 
     def train(self, episodes, episodeLength):
@@ -140,22 +167,24 @@ class HDQN(object):
 
             epsilon = self.epsilon0/(episode*self.epsilon_decay_rate+1)
 
-            for step in range(episodeLength):
+            remaining_time = episodeLength
 
-                action, hint = self.unpack(self.argmax(observation)[0])
+            while remaining_time > 0:
+
+                action = self.argmax(observation)[0]
+
                 action = self.policy(action, epsilon)
 
-                prev_obs = observation
-
-                reward = self.env.play(action)
-
-                observation = self.observe(self.env.state)
+                if action >= self.actiondim:
+                  prev_obs, observation, reward, remaining_time = self.apply_primitive(action-self.actiondim, remaining_time)
+                else:
+                  prev_obs, observation, reward = self.apply_action(action)
+                  remaining_time = remaining_time - 1
 
                 if self.env.termination:
                     self.replay_buffer.append({'old_state': prev_obs, 
                                           'new_state': observation, 
                                           'action': action,
-                                          'hint': hint,
                                           'reward': reward,
                                            'done': True })
                     break
@@ -164,12 +193,11 @@ class HDQN(object):
                     self.replay_buffer.append({'old_state': prev_obs, 
                                           'new_state': observation, 
                                           'action': action,
-                                          'hint': hint,
                                           'reward': reward,
                                           'done': False})
 
-            print("Episode", episode, (reward, step, epsilon))
-            self.results_array.append((reward, step, epsilon))
+            print("Episode", episode, (reward, episodeLength-remaining_time, epsilon))
+            self.results_array.append((reward, episodeLength-remaining_time, epsilon))
 
             S, A, Y = self.sample_batch(self.minibatch)
 
@@ -202,18 +230,18 @@ class TabularHDQN(HDQN):
 
         x = tf.placeholder(tf.float32, shape=sarraydims)
 
-        a = tf.placeholder(tf.float32, shape=[None, self.actiondim*self.k])
+        a = tf.placeholder(tf.float32, shape=[None, self.augmentedsize])
 
         y = tf.placeholder(tf.float32, shape=[None, 1])
 
     
-        table = tf.Variable(0*tf.random_uniform([1, self.statedim[0], self.statedim[1], self.actiondim*self.k]))
+        table = tf.Variable(0*tf.random_uniform([1, self.statedim[0], self.statedim[1], self.augmentedsize]))
 
-        inputx = tf.tile(tf.reshape(x, [-1, self.statedim[0], self.statedim[1], 1]), [1, 1, 1, self.actiondim*self.k])
+        inputx = tf.tile(tf.reshape(x, [-1, self.statedim[0], self.statedim[1], 1]), [1, 1, 1, self.augmentedsize])
 
         tiled_table = tf.tile(table, [tf.shape(x)[0],1,1,1])
 
-        collapse = tf.reshape(tf.reduce_sum(tf.reduce_sum(tf.multiply(inputx, tiled_table), 1), 1), [-1, self.actiondim*self.k])
+        collapse = tf.reshape(tf.reduce_sum(tf.reduce_sum(tf.multiply(inputx, tiled_table), 1), 1), [-1, self.augmentedsize])
 
         output = tf.reshape(tf.reduce_mean(tf.multiply(a, collapse), 1), [-1, 1])
 

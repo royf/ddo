@@ -92,9 +92,9 @@ def logisticRegression(sdim, adim):
 
     y = tf.nn.softmax(logit)
 
-    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+    logprob = tf.reshape(tf.nn.softmax_cross_entropy_with_logits(logit, a), [-1,1])
 
-    wlogprob = tf.multiply(tf.transpose(weight), logprob)
+    wlogprob = tf.multiply(weight, logprob)
         
     return {'state': x, 
                 'action': a, 
@@ -141,9 +141,9 @@ def multiLayerPerceptron(sdim,
     logit = tf.matmul(h1, W_out) + b_out
     y = tf.nn.softmax(logit)
 
-    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+    logprob = tf.reshape(tf.nn.softmax_cross_entropy_with_logits(logit, a), [-1,1])
 
-    wlogprob = tf.multiply(tf.transpose(weight), logprob)
+    wlogprob = tf.multiply(weight, logprob)
         
     return {'state': x, 
                 'action': a, 
