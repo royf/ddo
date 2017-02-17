@@ -89,7 +89,8 @@ class ForwardBackward(object):
                 continue
 
             #allow for automatic squeezes of the last dimension
-            if self.model.statedim[-1] == 1:
+            if self.model.statedim[-1] == 1 and \
+               not (t[0].shape == self.model.statedim):
 
                 if t[0].shape != self.model.statedim[:-1]:
                     return False
@@ -100,7 +101,8 @@ class ForwardBackward(object):
                     print("b")
                     return False
 
-            if self.model.actiondim[-1] == 1:
+            if self.model.actiondim[-1] == 1 and \
+               not (t[1].shape == self.model.actiondim):
 
                 if t[1].shape != self.model.actiondim[:-1]:
                     print("c")

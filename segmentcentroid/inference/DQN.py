@@ -37,11 +37,27 @@ class DQN(object):
 
         self.sess = tf.Session()
 
+        
         self.network = self.createQNetwork()
+
+        self.evalNetwork = self.createQNetwork()
+
 
         self.epsilon0 = epsilon0
 
         self.epsilon_decay_rate = epsilon_decay_rate
+
+        self.resultsFile = None
+
+        #some nuisance logging parameters
+        self.checkpoint_frequency = 100
+
+        self.eval_frequency = 10
+
+        self.eval_trials = 30
+
+        self.update_frequency = 100
+
 
 
     def setResultsFile(self, resultsFile, resultInfo):
@@ -55,16 +71,24 @@ class DQN(object):
     def observe(self, s):
         raise NotImplemented("Must provide an observation function")
 
-    def eval(self, S):
-        feedDict = {self.network['state']: S}
-        return self.sess.run(self.network['alloutput'], feedDict)
+    def eval(self, S, stable_weights=False):
+        
+        if stable_weights:
+          feedDict = {self.network['state']: S}
+          out = self.sess.run(self.network['alloutput'], feedDict)
+          return out
+        else:
+          feedDict = {self.evalNetwork['state']: S}
+          out = self.sess.run(self.evalNetwork['alloutput'], feedDict)
+          return out
 
     def argmax(self, S):
-        #print(np.argmax(self.eval(S), axis=1))
-        return np.argmax(self.eval(S), axis=1)
+        #print("amax", np.argmax(self.eval(S)), self.eval(S))
+        return np.argmax(self.eval(S))
 
-    def max(self, S):
-        return np.max(self.eval(S), axis=1)
+    def max(self, S, stable_weights):
+        #print(S, np.max(self.eval(S), axis=1))
+        return np.max(self.eval(S, stable_weights), axis=1)
 
 
     def policy(self, saction, epsilon):
@@ -73,6 +97,9 @@ class DQN(object):
         else:
             return saction
 
+    def tieWeights(self):
+      for i, v in enumerate(self.evalNetwork['weights']):
+        self.sess.run(tf.assign(v, self.network['weights'][i]))
 
     def sample_batch(self, size):
         N = len(self.replay_buffer)
@@ -95,7 +122,13 @@ class DQN(object):
             D[i,:] = sample[i]['done']
             R[i,:] = sample[i]['reward']
 
-        V = np.reshape(self.max(Sp),(-1,1))
+        V = np.reshape(self.max(Sp, True),(-1,1))
+        V1 = np.reshape(self.max(Sp, False),(-1,1))
+
+        #print(A)
+
+        #print(V,V1)
+        #print(V)
         Y = np.zeros((size, 1))
 
         for j in range(size):
@@ -104,7 +137,12 @@ class DQN(object):
             else:
                 Y[j, :] = R[j,:] + self.gamma*V[j,:]
 
+
+        #print(Y)
+
         return S, A, Y
+
+
 
 
     def train(self, episodes, episodeLength):
@@ -117,7 +155,6 @@ class DQN(object):
             if len(self.replay_buffer) > self.buffersize:
                 self.replay_buffer = self.replay_buffer[-self.buffersize:]
 
-
             self.env.init()
 
             observation = self.observe(self.env.state)
@@ -126,8 +163,13 @@ class DQN(object):
 
             for step in range(episodeLength):
 
-                action = self.argmax(observation)[0]
+                #print(self.env.state)
+
+                action = self.argmax(observation)
+
                 action = self.policy(action, epsilon)
+
+                #print(action)
 
                 prev_obs = observation
 
@@ -141,8 +183,6 @@ class DQN(object):
                                           'action': action,
                                           'reward': reward,
                                            'done': True })
-                    break
-
                 else:
                     self.replay_buffer.append({'old_state': prev_obs, 
                                           'new_state': observation, 
@@ -150,25 +190,118 @@ class DQN(object):
                                           'reward': reward,
                                           'done': False})
 
-            S, A, Y = self.sample_batch(self.minibatch)
+            #S, A, Y = self.sample_batch(self.minibatch)
 
-            self.sess.run(minimizer, {self.network['state']: S, 
-                                   self.network['action']: A,
-                                   self.network['y']: Y}) 
+                S, A, Y = self.sample_batch(self.minibatch)
+            #for i in range(1):
 
-            batch_loss = self.sess.run(self.network['woutput'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y})
+                #batch_loss = self.sess.run(self.network['woutput'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y})
+                #print("before", batch_loss, batch_loss.shape)
+
+            #for i in range(1,100):
+            #S, A, Y = self.sample_batch(self.minibatch)
+              #print(self.network['y'])
+                self.sess.run(minimizer, {self.network['state']: S, 
+                                      self.network['action']: A,
+                                       self.network['y']: Y}) 
+
+                batch_loss = self.sess.run(self.network['debug'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y}) #list(zip(S, self.sess.run(self.network['output'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y}), self.sess.run(self.network['y'], {self.network['state']: S, self.network['action']: A, self.network['y']: Y})))
+                #print("after",batch_loss, A)
+
+                if self.env.termination:
+                  break
 
 
-            print("Episode", episode, (self.env.reward, step, epsilon, batch_loss))
-            self.results_array.append((self.env.reward, step, epsilon, batch_loss))
+
+
+            print("Episode", episode, (self.env.reward, step, epsilon))
+            self.results_array.append((self.env.reward, step, epsilon))
+
+
+            if episode % self.update_frequency == (self.update_frequency - 1):
+              self.tieWeights()
+            #  target_weights = zip(self.network['weights'], self.sess.run(self.network['weights']))
+
+
+            if episode % self.eval_frequency == (self.eval_frequency-1):
+              total_return = self.evalValueFunction(episodeLength, self.eval_trials)
+              self.results_array.append((None, episode, total_return))
+              print("Evaluating",episode, np.mean(total_return), total_return)
+
 
             if self.resultsFile != None \
-                and episode % 100 == 99:
+                and episode % self.checkpoint_frequency == (self.checkpoint_frequency-1):
               print("Saving Data...")
               import pickle
               f = open(self.resultsFile, 'wb')
               pickle.dump({'data': self.results_array, 'info': self.resultInfo}, f)
               f.close()
+
+
+    def evalValueFunction(self, episodeLength, trials):
+        
+        total_return = []
+
+        for trial in range(trials):
+          self.env.init()
+
+          remaining_time = episodeLength
+          observation = self.observe(self.env.state)
+
+          while remaining_time > 0:
+            action = self.argmax(observation)
+
+            #print(self.eval(observation))
+
+            self.env.play(action)
+
+            observation = self.observe(self.env.state)
+            
+            remaining_time = remaining_time - 1
+
+            if self.env.termination:
+              break
+
+          total_return.append(self.env.reward)
+
+        return total_return
+
+
+
+
+    def sampleTrajectories(self, episodeLength, trials):
+        
+        trajectories = []
+
+        for trial in range(trials):
+          self.env.init()
+
+          remaining_time = episodeLength
+          observation = self.observe(self.env.state)
+
+          traj = []
+
+          while remaining_time > 0:
+            action = self.argmax(observation)
+            av = np.zeros((self.actiondim, 1)) 
+            av[action] = 1
+
+            #print(self.env.state, action, self.eval(observation))
+
+            traj.append((observation[0,:] , av))
+
+            self.env.play(action)
+
+            observation = self.observe(self.env.state)
+            
+            remaining_time = remaining_time - 1
+
+            if self.env.termination:
+              break
+
+          trajectories.append(traj)
+
+        return trajectories
 
 
 class TabularDQN(DQN):
@@ -198,7 +331,7 @@ class TabularDQN(DQN):
         y = tf.placeholder(tf.float32, shape=[None, 1])
 
     
-        table = tf.Variable(0*tf.random_uniform([1, self.statedim[0], self.statedim[1], self.actiondim]))
+        table = tf.Variable(0.0*tf.random_uniform([1, self.statedim[0], self.statedim[1], self.actiondim]))
 
         inputx = tf.tile(tf.reshape(x, [-1, self.statedim[0], self.statedim[1], 1]), [1, 1, 1, self.actiondim])
 

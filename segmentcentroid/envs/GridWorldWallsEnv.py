@@ -24,7 +24,7 @@ class GridWorldWallsEnv(AbstractEnv):
     actions_num = 4
     GOAL_REWARD = +1
     PIT_REWARD = -1
-    STEP_REWARD = 0
+    STEP_REWARD = -0.0
 
     #takes in a 2d integer map coded by the first line of comments
     def __init__(self, gmap, noise=0.1):
@@ -144,10 +144,10 @@ class GridWorldWallsEnv(AbstractEnv):
             #ns[0] = -1
             self.state = ns
             self.time = self.time + 1
-            self.reward = self.reward #+ self.STEP_REWARD
+            self.reward = self.reward + self.STEP_REWARD
             self.termination = self.isTerminal()
 
-            return 0#self.STEP_REWARD
+            return self.STEP_REWARD
 
 
         #copies states to make sure no concurrency issues

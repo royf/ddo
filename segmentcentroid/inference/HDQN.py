@@ -24,7 +24,7 @@ class HDQN(object):
 
         self.actiondim = actiondim
 
-        self.augmentedsize = statedim[0] + actiondim
+        self.augmentedsize = actiondim + model.k
 
         self.k = model.k
 
@@ -56,6 +56,13 @@ class HDQN(object):
 
         self.primtivesOnly = False
 
+        #some nuisance logging parameters
+        self.checkpoint_frequency = 100
+
+        self.eval_frequency = 10
+
+        self.eval_trials = 30
+
 
     def setResultsFile(self, resultsFile, resultInfo):
       self.resultsFile = resultsFile
@@ -78,11 +85,14 @@ class HDQN(object):
 
     def eval(self, S):
         feedDict = {self.network['state']: S}
+        out = self.sess.run(self.network['alloutput'], feedDict)
+        #bad_indices = [i for i in range(self.actiondim) if i not in self.env.possibleActions(self.env.state)]
 
         if self.primtivesOnly:
-          return self.sess.run(self.network['alloutput'], feedDict)[:,self.actiondim:]
+          out[:,0:self.actiondim] = -np.inf
+          return out
         else:
-          return self.sess.run(self.network['alloutput'], feedDict)
+          return out
 
     def argmax(self, S):
         return np.argmax(self.eval(S), axis=1)
@@ -93,10 +103,12 @@ class HDQN(object):
 
     def policy(self, saction, epsilon):
         if np.random.rand(1) < epsilon:
+
           if self.primtivesOnly:
             return np.random.choice(np.arange(self.actiondim, self.actiondim+self.k))
           else:
             return np.random.choice(np.arange(self.actiondim+self.k))
+
         else:
             return saction
 
@@ -194,10 +206,12 @@ class HDQN(object):
             while remaining_time > 0:
 
                 action = self.argmax(observation)[0]
+                #print(self.eval(observation), action)
 
                 action = self.policy(action, epsilon)
 
                 if action >= self.actiondim:
+                  #print(action)
                   prev_obs, observation, reward, remaining_time, _ = self.apply_primitive(action-self.actiondim, remaining_time)
                 else:
                   prev_obs, observation, reward = self.apply_action(action)
@@ -219,7 +233,7 @@ class HDQN(object):
                                           'done': False})
 
             print("Episode", episode, (reward, episodeLength-remaining_time, epsilon))
-            self.results_array.append((reward, episodeLength-remaining_time, epsilon))
+            self.results_array.append((self.env.reward, episodeLength-remaining_time, epsilon))
 
             S, A, Y = self.sample_batch(self.minibatch)
 
@@ -228,13 +242,48 @@ class HDQN(object):
                                    self.network['y']: Y}) 
 
 
+            if episode % self.eval_frequency == (self.eval_frequency-1):
+              total_return = self.evalValueFunction(episodeLength, self.eval_trials)
+              self.results_array.append((None, episode, total_return))
+              print("Evaluating",episode, np.mean(total_return))
+
+
             if self.resultsFile != None \
-                and episode % 100 == 99:
+                and episode % self.checkpoint_frequency == (self.checkpoint_frequency-1):
               print("Saving Data...")
               import pickle
               f = open(self.resultsFile, 'wb')
               pickle.dump({'data': self.results_array, 'info': self.resultInfo}, f)
               f.close()
+
+
+    def evalValueFunction(self, episodeLength, trials):
+        
+        total_return = []
+
+        for trial in range(trials):
+          self.env.init()
+
+          remaining_time = episodeLength
+          observation = self.observe(self.env.state)
+
+          while remaining_time > 0:
+            action = self.argmax(observation)[0]
+
+            #print(action, remaining_time)
+
+            if action >= self.actiondim:
+                prev_obs, observation, reward, remaining_time, _ = self.apply_primitive(action-self.actiondim, remaining_time)
+            else:
+                prev_obs, observation, reward = self.apply_action(action)
+                remaining_time = remaining_time - 1
+
+            if self.env.termination:
+              break
+
+          total_return.append(self.env.reward)
+
+        return total_return
 
 
 

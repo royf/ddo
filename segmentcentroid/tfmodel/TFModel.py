@@ -398,10 +398,10 @@ class TFModel(object):
             #print(self.fb.B)
             #    print("Loss",self.sess.run(self.transition_networks[0]['lprob'], batch))
 
-            gradients_materialized = self.sess.run(self.gradients, batch)
+            #gradients_materialized = self.sess.run(self.gradients, batch)
 
         
-        return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
+        #return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
 
 
     def runVectorQuantization(self, X, vqiterations, vqbatchsize):
