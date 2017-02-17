@@ -4,6 +4,7 @@ the open ai gym atari environments
 """
 
 import gym
+import numpy as np
 from .AbstractEnv import *
 
 class AtariEnv(AbstractEnv):

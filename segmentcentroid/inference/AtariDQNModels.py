@@ -136,6 +136,8 @@ class LinearDQN(DQN):
                  env,
                  statedim,
                  actiondim,
+                 hidden_layer=32,
+                 regularization=0.01,
                  buffersize = 100000,
                  gamma = 0.99,
                  learning_rate = 0.1,
@@ -143,10 +145,14 @@ class LinearDQN(DQN):
                  epsilon0=1,
                  epsilon_decay_rate=1e-3):
 
+        self.hidden_layer = hidden_layer
+        self.regularization = regularization
+
         super(LinearDQN, self).__init__(env, statedim, actiondim, buffersize, gamma, learning_rate, minibatch, epsilon0, epsilon_decay_rate)
         self.checkpoint_frequency = 1000
         self.eval_frequency = 20
         self.eval_trials = 10
+        self.update_frequency = 2
 
 
 
@@ -158,12 +164,12 @@ class LinearDQN(DQN):
 
         y = tf.placeholder(tf.float32, shape=[None, 1])
 
-        W1 = tf.Variable(tf.random_normal([self.statedim[0], 32]))
-        b1 = tf.Variable(tf.random_normal([32]))
+        W1 = tf.Variable(tf.random_normal([self.statedim[0],  self.hidden_layer]))
+        b1 = tf.Variable(tf.random_normal([ self.hidden_layer]))
 
         h = tf.nn.relu(tf.matmul(x, W1) + b1)
 
-        W2 = tf.Variable(tf.random_normal([32, self.actiondim]))
+        W2 = tf.Variable(tf.random_normal([ self.hidden_layer, self.actiondim]))
         b2 = tf.Variable(tf.random_normal([self.actiondim]))
 
         alloutput = tf.reshape(tf.matmul(h, W2) + b2, [-1, self.actiondim])
@@ -175,7 +181,7 @@ class LinearDQN(DQN):
         woutput = tf.reduce_mean(tf.square(y-output)) #+  0.1*(tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(b)))
 
         #for w in weights:
-        woutput = woutput + 0.01*(tf.reduce_sum(tf.square(alloutput)))
+        woutput = woutput + self.regularization*(tf.reduce_sum(tf.square(alloutput)))
         
         return {'state': x, 
                 'action': a, 

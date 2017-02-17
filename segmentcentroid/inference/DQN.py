@@ -251,7 +251,7 @@ class DQN(object):
           while remaining_time > 0:
             action = self.argmax(observation)
 
-            #print(self.eval(observation))
+            print(self.eval(observation), action)
 
             self.env.play(action)
 

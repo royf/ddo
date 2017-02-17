@@ -48,6 +48,8 @@ class HDQN(object):
 
         self.network = self.createQNetwork()
 
+        self.evalNetwork = self.createQNetwork()
+
         self.epsilon0 = epsilon0
 
         self.epsilon_decay_rate = epsilon_decay_rate
@@ -62,6 +64,8 @@ class HDQN(object):
         self.eval_frequency = 10
 
         self.eval_trials = 30
+
+        self.update_frequency = 100
 
 
     def setResultsFile(self, resultsFile, resultInfo):
@@ -83,10 +87,16 @@ class HDQN(object):
       raise NotImplemented("Must provide a translate function")
 
 
-    def eval(self, S):
+    def eval(self, S, stable_weights=False):
         feedDict = {self.network['state']: S}
         out = self.sess.run(self.network['alloutput'], feedDict)
-        #bad_indices = [i for i in range(self.actiondim) if i not in self.env.possibleActions(self.env.state)]
+
+        if stable_weights:
+          feedDict = {self.network['state']: S}
+          out = self.sess.run(self.network['alloutput'], feedDict)
+        else:
+          feedDict = {self.evalNetwork['state']: S}
+          out = self.sess.run(self.evalNetwork['alloutput'], feedDict)
 
         if self.primtivesOnly:
           out[:,0:self.actiondim] = -np.inf
@@ -95,10 +105,10 @@ class HDQN(object):
           return out
 
     def argmax(self, S):
-        return np.argmax(self.eval(S), axis=1)
+        return np.argmax(self.eval(S))
 
-    def max(self, S):
-        return np.max(self.eval(S), axis=1)
+    def max(self, S, stable_weights):
+        return np.max(self.eval(S, stable_weights), axis=1)
 
 
     def policy(self, saction, epsilon):
@@ -134,7 +144,7 @@ class HDQN(object):
             D[i,:] = sample[i]['done']
             R[i,:] = sample[i]['reward']
 
-        V = np.reshape(self.max(Sp),(-1,1))
+        V = np.reshape(self.max(Sp, True),(-1,1))
         Y = np.zeros((size, 1))
 
         for j in range(size):
@@ -144,6 +154,11 @@ class HDQN(object):
                 Y[j, :] = R[j,:] + self.gamma*V[j,:]
 
         return S, A, Y
+
+
+    def tieWeights(self):
+      for i, v in enumerate(self.evalNetwork['weights']):
+        self.sess.run(tf.assign(v, self.network['weights'][i]))
 
 
     def apply_primitive(self, i, remaining):
@@ -205,7 +220,7 @@ class HDQN(object):
 
             while remaining_time > 0:
 
-                action = self.argmax(observation)[0]
+                action = self.argmax(observation)
                 #print(self.eval(observation), action)
 
                 action = self.policy(action, epsilon)
@@ -223,7 +238,6 @@ class HDQN(object):
                                           'action': action,
                                           'reward': reward,
                                            'done': True })
-                    break
 
                 else:
                     self.replay_buffer.append({'old_state': prev_obs, 
@@ -232,15 +246,22 @@ class HDQN(object):
                                           'reward': reward,
                                           'done': False})
 
-            print("Episode", episode, (reward, episodeLength-remaining_time, epsilon))
+
+                S, A, Y = self.sample_batch(self.minibatch)
+
+                self.sess.run(minimizer, {self.network['state']: S, 
+                                       self.network['action']: A,
+                                       self.network['y']: Y}) 
+
+                if self.env.termination:
+                  break
+
             self.results_array.append((self.env.reward, episodeLength-remaining_time, epsilon))
 
-            S, A, Y = self.sample_batch(self.minibatch)
+            print("Episode", episode, (reward, episodeLength-remaining_time, epsilon))
 
-            self.sess.run(minimizer, {self.network['state']: S, 
-                                   self.network['action']: A,
-                                   self.network['y']: Y}) 
-
+            if episode % self.update_frequency == (self.update_frequency - 1):
+              self.tieWeights()
 
             if episode % self.eval_frequency == (self.eval_frequency-1):
               total_return = self.evalValueFunction(episodeLength, self.eval_trials)
@@ -268,7 +289,7 @@ class HDQN(object):
           observation = self.observe(self.env.state)
 
           while remaining_time > 0:
-            action = self.argmax(observation)[0]
+            action = self.argmax(observation)
 
             #print(action, remaining_time)
 
@@ -343,7 +364,74 @@ class TabularHDQN(HDQN):
         sp[0, s[0],s[1]] =  1
         return sp
 
+class LinearHDQN(HDQN):
 
+    def __init__(self,
+                 env,
+                 statedim,
+                 actiondim,
+                 model,
+                 regularization=0.01,
+                 hidden_layer = 32,
+                 buffersize = 100000,
+                 gamma = 0.99,
+                 learning_rate = 0.1,
+                 minibatch=100,
+                 epsilon0=1,
+                 epsilon_decay_rate=1e-3):
+
+        self.regularization = regularization
+        self.hidden_layer = hidden_layer
+
+        super(LinearHDQN, self).__init__(env, statedim, actiondim, model, buffersize, gamma, learning_rate, minibatch, epsilon0, epsilon_decay_rate)
+        
+        self.checkpoint_frequency = 1000
+        self.eval_frequency = 20
+        self.eval_trials = 10
+
+
+
+
+    def createQNetwork(self):
+
+        x = tf.placeholder(tf.float32, shape=[None, self.statedim[0]])
+
+        a = tf.placeholder(tf.float32, shape=[None, self.augmentedsize])
+
+        y = tf.placeholder(tf.float32, shape=[None, 1])
+
+        W1 = tf.Variable(tf.random_normal([self.statedim[0], self.hidden_layer]))
+        b1 = tf.Variable(tf.random_normal([ self.hidden_layer]))
+
+        h = tf.nn.relu(tf.matmul(x, W1) + b1)
+
+        W2 = tf.Variable(tf.random_normal([ self.hidden_layer, self.augmentedsize]))
+        b2 = tf.Variable(tf.random_normal([self.augmentedsize]))
+
+        alloutput = tf.reshape(tf.matmul(h, W2) + b2, [-1, self.augmentedsize])
+
+        output = tf.reshape(tf.reduce_mean(tf.multiply(a, alloutput), 1), [-1, 1])
+
+        weights = [W1, b1, W2, b2]
+
+        woutput = tf.reduce_mean(tf.square(y-output)) #+  0.1*(tf.reduce_sum(tf.square(W)) + tf.reduce_sum(tf.square(b)))
+
+        #for w in weights:
+        woutput = woutput + self.regularization*(tf.reduce_sum(tf.square(alloutput)))
+        
+        return {'state': x, 
+                'action': a, 
+                'y': y,
+                'output': output,
+                'debug': h,
+                'weights': weights,
+                'alloutput': alloutput,
+                'woutput': woutput}
+
+
+    def observe(self, s):
+        sp = np.reshape(s, (1,self.statedim[0]))
+        return sp
 
 
 
