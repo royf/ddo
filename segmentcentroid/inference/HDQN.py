@@ -175,8 +175,16 @@ class HDQN(object):
 
             remaining = remaining - 1
 
-            l = [ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in self.env.possibleActions(self.env.state)]
-            chosen_action = self.env.possibleActions(self.env.state)[np.argmax(l)]
+            
+            #l = [ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in self.env.possibleActions(self.env.state)]
+
+            #chosen_action = self.env.possibleActions(self.env.state)[np.argmax(l)]
+
+            l = [ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in range(self.actiondim)]
+
+            chosen_action = np.random.choice(range(0, actiondim), size=1, p=l)
+
+            
             reward = self.env.play(chosen_action)
 
             observation = self.observe(self.env.state)
@@ -221,9 +229,8 @@ class HDQN(object):
             while remaining_time > 0:
 
                 action = self.argmax(observation)
-                #print(self.eval(observation), action)
-
                 action = self.policy(action, epsilon)
+                print("applied",action, remaining_time)
 
                 if action >= self.actiondim:
                   #print(action)
@@ -388,6 +395,7 @@ class LinearHDQN(HDQN):
         self.checkpoint_frequency = 1000
         self.eval_frequency = 20
         self.eval_trials = 10
+        self.update_frequency = 2
 
 
 

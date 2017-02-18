@@ -249,7 +249,7 @@ class TFModel(object):
 
             feed_dict[self.psivars[j][0]] = Xm
             feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[1][:,j])
-            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))
+            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][:,j] - weights[1][:,j], (Xm.shape[0],1))
 
         return feed_dict
 
@@ -381,7 +381,7 @@ class TFModel(object):
 
             batch = self.sampleBatch(X)
 
-            #print("Iteration", it, np.argmax(self.fb.Q,axis=1))
+            print("Iteration", it, np.argmax(self.fb.Q,axis=1))
     
             import datetime
             now = datetime.datetime.now()

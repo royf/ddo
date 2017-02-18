@@ -150,7 +150,7 @@ class LinearDQN(DQN):
 
         super(LinearDQN, self).__init__(env, statedim, actiondim, buffersize, gamma, learning_rate, minibatch, epsilon0, epsilon_decay_rate)
         self.checkpoint_frequency = 1000
-        self.eval_frequency = 20
+        self.eval_frequency = 10
         self.eval_trials = 10
         self.update_frequency = 2
 
