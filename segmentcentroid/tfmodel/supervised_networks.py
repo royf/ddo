@@ -141,6 +141,7 @@ def multiLayerPerceptron(sdim,
     logit = tf.matmul(h1, W_out) + b_out
     y = tf.nn.softmax(logit)
 
+    #Sknote: a1 log(pred) - a2 log(1-pred)
     logprob = tf.reshape(tf.nn.softmax_cross_entropy_with_logits(logit, a), [-1,1])
 
     wlogprob = tf.multiply(weight, logprob)

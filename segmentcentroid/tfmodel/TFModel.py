@@ -181,8 +181,6 @@ class TFModel(object):
         dataTransformer -- a data augmentation routine
         """
 
-        #loss, pivars, psivars = self.getLossFunction()
-
         traj_index = np.random.choice(len(X))
         import datetime
         now  = datetime.datetime.now()
@@ -193,12 +191,13 @@ class TFModel(object):
         now  = datetime.datetime.now()
         weights = self.fb.fit([trajectory])
 
-        #print("Time", datetime.datetime.now()-now)
+
+        #Sknote: fetches Q, B from the forward backward algorithm
+        Q , B = weights[0][0] , weights[0][1]
+
 
         feed_dict = {}
         Xm, Am = self.formatTrajectory(trajectory)
-
-        #print(Xm.shape, Am.shape, weights[0][0][:,0].shape, weights[0][1][:,0].shape)
 
 
         #prevent stupid shaping errors
@@ -207,16 +206,17 @@ class TFModel(object):
             raise ValueError("Error in shapes in np array passed to TF")
 
 
-        #print("##Q##",weights[0][1][:,0])
-
         for j in range(self.k):
             feed_dict[self.pivars[j][0]] = Xm
             feed_dict[self.pivars[j][1]] = Am
-            feed_dict[self.pivars[j][2]] = np.reshape(weights[0][0][:,j], (Xm.shape[0],1))
+            feed_dict[self.pivars[j][2]] = np.reshape(Q[:,j], (Xm.shape[0],1))
 
             feed_dict[self.psivars[j][0]] = Xm
-            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[0][1][:,j])
-            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][0][:,j], (Xm.shape[0],1))
+
+            #Sknote: format transitions creates a vector [q-b, b]
+            feed_dict[self.psivars[j][1]] = self.formatTransitions(Q[:,j], B[:,j])
+            
+            feed_dict[self.psivars[j][2]] = np.reshape(np.ones((Xm.shape[0],1)), (Xm.shape[0],1))
 
         return feed_dict
 
@@ -248,8 +248,8 @@ class TFModel(object):
             feed_dict[self.pivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))
 
             feed_dict[self.psivars[j][0]] = Xm
-            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[1][:,j])
-            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][:,j] - weights[1][:,j], (Xm.shape[0],1))
+            feed_dict[self.psivars[j][1]] = self.formatTransitions(weights[0][:,j], weights[1][:,j])
+            feed_dict[self.psivars[j][2]] = np.reshape(weights[0][:,j], (Xm.shape[0],1))
 
         return feed_dict
 
@@ -306,16 +306,16 @@ class TFModel(object):
 
         return X, A
 
-    def formatTransitions(self, transitions):
+    def formatTransitions(self, q, b):
         """
         Internal method that turns a transition sequence (array of floats [0,1])
         into an encoded array [1-a, a]
         """
 
-        X = np.zeros((len(transitions),2))
-        for t in range(len(transitions)):
-            X[t,0] = (1 - transitions[t]) #(1 - transitions[t]) > transitions[t]
-            X[t,1] = transitions[t] #transitions[t] > (1 - transitions[t])
+        X = np.zeros((len(q),2))
+        for t in range(len(q)):
+            X[t,0] = (q[t] - b[t]) 
+            X[t,1] = b[t] 
         
         return X
 

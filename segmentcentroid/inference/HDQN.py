@@ -180,9 +180,10 @@ class HDQN(object):
 
             #chosen_action = self.env.possibleActions(self.env.state)[np.argmax(l)]
 
-            l = [ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in range(self.actiondim)]
+            l = np.array([ np.ravel(self.model.evalpi(i, [(self.env.state, actions[j,:])] ))  for j in range(self.actiondim)]).reshape(self.actiondim)
+            l = np.abs(l)/np.sum(l)
 
-            chosen_action = np.random.choice(range(0, actiondim), size=1, p=l)
+            chosen_action = np.random.choice(np.arange(0, self.actiondim), size=1, p=l)
 
             
             reward = self.env.play(chosen_action)
