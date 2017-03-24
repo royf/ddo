@@ -72,6 +72,7 @@ def ptrain(weights, dataset):
 demonstrations = 100
 dataset = ray.get([planner.remote() for i in range(demonstrations)])
 
+
 m = GridWorldModel(2, statedim=(2,1))
 m.sess.run(tf.initialize_all_variables())
 
@@ -103,7 +104,7 @@ with tf.variable_scope("optimizer"):
 
 
 
-        list_of_gradients = ray.get([ptrain.remote(weights, dataset) for i in range(0,2)])
+        list_of_gradients = ray.get([ptrain.remote(weights, dataset) for i in range(0,1)])
 
 
 
