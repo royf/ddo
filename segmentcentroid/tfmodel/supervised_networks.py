@@ -240,6 +240,49 @@ def conv2mlp(sdim, adim, _hiddenLayer=32):
                 'discrete': True}
 
 
+def conv2a3c(sdim, adim, _hiddenLayer=32):
+    code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+    sarraydims = [s for s in sdim]
+    sarraydims.insert(0, None)
+
+    x = tf.placeholder(tf.float32, shape=sarraydims)
+
+    a = tf.placeholder(tf.float32, shape=[None, adim])
+
+    weight = tf.placeholder(tf.float32, shape=[None, 1])
+
+    net = slim.conv2d(x, 32, [11, 11], 4, padding='VALID', scope='conv1'+code)
+    net = slim.conv2d(net, 64, [5, 5], scope='conv2'+code)
+    net = slim.conv2d(net, 128, [3, 3], scope='conv3'+code)
+
+    net = slim.flatten(net)
+    W1 = tf.Variable(tf.random_normal([8192, _hiddenLayer]))
+    b1 = tf.Variable(tf.random_normal([_hiddenLayer]))
+    output = tf.nn.sigmoid(tf.matmul(net, W1) + b1)
+    #output= tf.nn.dropout(output, dropout)
+
+    W2 = tf.Variable(tf.random_normal([_hiddenLayer, adim]))
+    b2 = tf.Variable(tf.random_normal([adim]))
+
+    logit = tf.matmul(output, W2) + b2
+
+    y = tf.nn.softmax(logit)
+
+    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+
+    wlogprob = tf.multiply(tf.transpose(weight), logprob)
+        
+    return {'state': x, 
+                'action': a, 
+                'weight': weight,
+                'prob': y, 
+                'amax': tf.argmax(y, 1),
+                'lprob': logprob,
+                'wlprob': wlogprob,
+                'discrete': True}
+
+
 def affine(sdim, adim, variance):
     """
     This function creates a linear regression network that takes states and

@@ -381,10 +381,7 @@ class TFModel(object):
 
             batch = self.sampleBatch(X)
 
-            #print("Iteration", it, np.argmax(self.fb.Q,axis=1))
-    
-            import datetime
-            now = datetime.datetime.now()
+            print("Iteration", it, np.argmax(self.fb.Q,axis=1))
 
             print("cLoss 1",np.mean(self.sess.run(self.policy_networks[0]['wlprob'], batch)))
             print("cLoss 2" , np.mean(self.sess.run(self.policy_networks[1]['wlprob'], batch)))
@@ -398,9 +395,9 @@ class TFModel(object):
             #print(self.fb.B)
             #    print("Loss",self.sess.run(self.transition_networks[0]['lprob'], batch))
 
-            gradients_materialized = self.sess.run(self.gradients, batch)
+            #gradients_materialized = self.sess.run(self.gradients, batch)
 
-            return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
+        #return gradients_materialized #Assumption [(t, gradients_materialized[i]) for i,t in enumerate(tf.trainable_variables())]
 
 
     def runVectorQuantization(self, X, vqiterations, vqbatchsize):
