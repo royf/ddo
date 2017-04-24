@@ -21,8 +21,8 @@ from .envs import create_env
 class Runner(object):
     """Actor object to start running simulation on workers.
         Gradient computation is also executed from this object."""
-    def __init__(self, env_name, actor_id, logdir="results/", start=True):
-        env = create_env(env_name)
+    def __init__(self, env_name, actor_id, logdir="results/", start=True, model=None, k=None):
+        env = create_env(env_name, model, k)
         self.id = actor_id
         num_actions = env.action_space.n
         self.policy = LSTMPolicy(env.observation_space.shape, num_actions, actor_id)
@@ -57,11 +57,11 @@ class Runner(object):
         return gradient, info
 
 
-def train(num_workers, env_name="Frostbite-v0", max_steps=10):
-    ray.init(num_cpus=num_workers)
-    env = create_env(env_name)
+def train(num_workers, env_name="Frostbite-v0", max_steps=10, model=None, k=None):
+    env = create_env(env_name, model)
+
     policy = LSTMPolicy(env.observation_space.shape, env.action_space.n, 0)
-    agents = [Runner(env_name, i) for i in range(num_workers)]
+    agents = [Runner(env_name, i, model=model, k=k) for i in range(num_workers)]
     parameters = policy.get_weights()
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]
     steps = 0

@@ -10,11 +10,18 @@ import logging
 import numpy as np
 import time
 
+from segmentcentroid.a3c.augmentedEnv import AugmentedEnv
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def create_env(env_id):
-    env = gym.make(env_id)
+def create_env(env_id, model=None, k=None):
+
+    if model != None and k != None:
+        env = AugmentedEnv(env_id,model, k)
+    else:
+        env = gym.make(env_id)
+
     env = AtariProcessing(env)
     env = Diagnostic(env)
     return env

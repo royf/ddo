@@ -241,7 +241,7 @@ def conv2mlp(sdim, adim, _hiddenLayer=32):
 
 
 def conv2a3c(sdim, adim, _hiddenLayer=32):
-    code = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+    code = ''#.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
 
     sarraydims = [s for s in sdim]
     sarraydims.insert(0, None)
@@ -252,9 +252,9 @@ def conv2a3c(sdim, adim, _hiddenLayer=32):
 
     weight = tf.placeholder(tf.float32, shape=[None, 1])
 
-    net = slim.conv2d(x, 32, [11, 11], 4, padding='VALID', scope='conv1'+code)
-    net = slim.conv2d(net, 64, [5, 5], scope='conv2'+code)
-    net = slim.conv2d(net, 128, [3, 3], scope='conv3'+code)
+    net = slim.conv2d(x, 32, [11, 11], 4, padding='VALID')
+    net = slim.conv2d(net, 64, [5, 5])
+    net = slim.conv2d(net, 128, [3, 3])
 
     net = slim.flatten(net)
     W1 = tf.Variable(tf.random_normal([8192, _hiddenLayer]))
