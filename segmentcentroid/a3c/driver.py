@@ -57,10 +57,10 @@ class Runner(object):
         return gradient, info
 
 
-def train(num_workers, env_name="Frostbite-v0", max_steps=10, model=None, k=None):
+def train(num_workers, env_name="Frostbite-v0", max_steps=1000, model=None, k=0):
     env = create_env(env_name, model)
 
-    policy = LSTMPolicy(env.observation_space.shape, env.action_space.n, 0)
+    policy = LSTMPolicy(env.observation_space.shape, env.action_space.n+k, 0)
     agents = [Runner(env_name, i, model=model, k=k) for i in range(num_workers)]
     parameters = policy.get_weights()
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]

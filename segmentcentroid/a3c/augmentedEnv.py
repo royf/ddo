@@ -12,17 +12,20 @@ class AugmentedEnv(gym.Env):
 
   def __init__(self, gymEnvName, model_weights, k):
 
-    model = AtariVisionModel(k)
-    model.sess.run(tf.initialize_all_variables())
-    variables = ray.experimental.TensorFlowVariables(model.loss, model.sess)
-    
-    variables.set_weights(model_weights)
+    g = tf.Graph()
+    with g.as_default():
+        model = AtariVisionModel(k)
+        model.sess.run(tf.initialize_all_variables())
+        variables = ray.experimental.TensorFlowVariables(model.loss, model.sess)
+
+        variables.set_weights(model_weights)
 
     self.model = model
     self.env = gym.make(gymEnvName)
     self.action_space = spaces.Discrete(self.env.action_space.n + model.k) 
     self.obs = None
     self.done = False
+    self.spec = self.env.spec
 
   def _process_frame42(self, frame):
     frame = frame[34:(34+160), :160]
@@ -42,22 +45,25 @@ class AugmentedEnv(gym.Env):
     actions = np.eye(N)
     
     if action < N:
-        output = self.env._step(action)
-        self.obs, _, self.done , _ = output
+        self.obs, reward, self.done, info = self.env._step(action)
     else:
         obs = self.obs
         proc_obs = self._process_frame42(obs)
         done = self.done
         term = 0 
+        reward = 0
 
         while (not done) and (np.random.rand(1) > term):  
-            l = [ np.ravel(self.model.evalpi(action-N, [(proc_obs, actions[j,:])] ))  for j in range(N)]
-            output = self._step(np.argmax(l))
+            l = [ self.model.evalpi(action-N, [(proc_obs, actions[j,:])])[0]  for j in range(N)]
+            self.obs, rewardl, self.done, info = self._step(np.random.choice(np.arange(0,N),p=l/np.sum(l)))
+
+            reward = reward + rewardl
+
             obs = self.obs
             done = self.done
-            term = np.ravel(self.model.evalpsi(action-N, [(proc_obs, actions[1,:])]))
+            term = np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])),0.1)
 
-    return output
+    return self.obs, reward, self.done, info
 
   def _reset(self):
     self.obs = self.env._reset()

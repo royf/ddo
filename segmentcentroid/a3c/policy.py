@@ -63,9 +63,10 @@ class Policy(object):
             self.summary_op = tf.summary.merge_all()
 
     def initialize(self):
-        self.sess = tf.Session(graph=self.g,  config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
-        self.variables = ray.experimental.TensorFlowVariables(self.loss, self.sess)
-        self.sess.run(tf.global_variables_initializer())
+        with self.g.as_default():
+            self.sess = tf.Session(graph=self.g,  config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
+            self.variables = ray.experimental.TensorFlowVariables(self.loss, self.sess)
+            self.sess.run(tf.global_variables_initializer())
 
     def model_update(self, grads):
         feed_dict = {self.grads[i]: grads[i]
@@ -73,11 +74,13 @@ class Policy(object):
         self.sess.run(self._apply_gradients, feed_dict=feed_dict)
 
     def get_weights(self):
-        weights = self.variables.get_weights()
+        with self.g.as_default():
+            weights = self.variables.get_weights()
         return weights
 
     def set_weights(self, weights):
-        self.variables.set_weights(weights)
+        with self.g.as_default():
+            self.variables.set_weights(weights)
 
     def get_gradients(self, batch):
         raise NotImplementedError

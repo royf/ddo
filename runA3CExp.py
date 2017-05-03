@@ -11,23 +11,22 @@ ray.init(num_cpus=2)
 
 env, policy = train(2)
 trajs = collect_demonstrations(env, policy)
-a = AtariVisionModel(2)
 
-with tf.variable_scope("optimizer2"):
-    opt = tf.train.GradientDescentOptimizer(learning_rate=1e-3)
-    a.sess.run(tf.initialize_all_variables())
-    a.train(opt, trajs, 2, 2)
+with tf.Graph().as_default():
+    a = AtariVisionModel(2)
 
-variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
+    variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
 
-weights = variables.get_weights()
+    with tf.variable_scope("optimizer2"):
+        opt = tf.train.AdamOptimizer(learning_rate=1e-3)
+        a.sess.run(tf.initialize_all_variables())
+        a.train(opt, trajs, 100, 100)
+
+    weights = variables.get_weights()
 
 
-a2 = AtariVisionModel(2)
-a2.sess.run(tf.initialize_all_variables())
-#env, policy = train(2, model=weights, k=2)
-variables = ray.experimental.TensorFlowVariables(a2.loss, a2.sess)
-variables.set_weights(weights)
+env, policy = train(2, model=weights, k=2)
+
 
 #print(env.step(1))
 
