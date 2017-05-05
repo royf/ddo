@@ -57,7 +57,7 @@ class Runner(object):
         return gradient, info
 
 
-def train(num_workers, env_name="Frostbite-v0", max_steps=1000, model=None, k=0):
+def train(num_workers, env_name="PongDeterministic-v3", max_steps=10000, model=None, k=0):
     env = create_env(env_name, model)
 
     policy = LSTMPolicy(env.observation_space.shape, env.action_space.n+k, 0)

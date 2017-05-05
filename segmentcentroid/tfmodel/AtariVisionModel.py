@@ -13,7 +13,7 @@ class AtariVisionModel(TFSeparableModel):
     def __init__(self,  
                  k,
                  statedim=(42,42,1), 
-                 actiondim=(18,1)):
+                 actiondim=(6,1)):
         
         super(AtariVisionModel, self).__init__(statedim, actiondim, k, [0,1],'all')
 

@@ -61,7 +61,7 @@ class AugmentedEnv(gym.Env):
 
             obs = self.obs
             done = self.done
-            term = np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])),0.1)
+            term = np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])),0.05)
 
     return self.obs, reward, self.done, info
 

@@ -20,7 +20,7 @@ with tf.Graph().as_default():
     with tf.variable_scope("optimizer2"):
         opt = tf.train.AdamOptimizer(learning_rate=1e-3)
         a.sess.run(tf.initialize_all_variables())
-        a.train(opt, trajs, 100, 100)
+        a.train(opt, trajs, 1000, 100)
 
     weights = variables.get_weights()
 
