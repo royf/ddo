@@ -252,12 +252,11 @@ def conv2a3c(sdim, adim, _hiddenLayer=32):
 
     weight = tf.placeholder(tf.float32, shape=[None, 1])
 
-    net = slim.conv2d(x, 32, [11, 11], 4, padding='VALID')
-    net = slim.conv2d(net, 64, [5, 5])
-    net = slim.conv2d(net, 128, [3, 3])
+    net = slim.conv2d(x, 16, [11, 11], 4, padding='VALID')
+    net = slim.conv2d(x, 8, [3, 3], 2, padding='VALID')
 
     net = slim.flatten(net)
-    W1 = tf.Variable(tf.random_normal([8192, _hiddenLayer]))
+    W1 = tf.Variable(tf.random_normal([3200, _hiddenLayer]))
     b1 = tf.Variable(tf.random_normal([_hiddenLayer]))
     output = tf.nn.sigmoid(tf.matmul(net, W1) + b1)
     #output= tf.nn.dropout(output, dropout)

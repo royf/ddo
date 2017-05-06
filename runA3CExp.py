@@ -9,8 +9,25 @@ import ray
 
 ray.init(num_cpus=2)
 
-env, policy = train(2)
+with tf.Graph().as_default():
+    a = AtariVisionModel(2)
+
+    variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
+
+    #env, policy = train(2)
+    #trajs = collect_demonstrations(env, policy)
+
+    with tf.variable_scope("optimizer2"):
+        opt = tf.train.AdamOptimizer(learning_rate=1e-3)
+        a.sess.run(tf.initialize_all_variables())
+        #a.train(opt, trajs, 1000, 100)
+
+    weights = variables.get_weights()
+
+env, policy = train(2, model=weights, k=2)
 trajs = collect_demonstrations(env, policy)
+
+
 
 with tf.Graph().as_default():
     a = AtariVisionModel(2)
@@ -20,13 +37,12 @@ with tf.Graph().as_default():
     with tf.variable_scope("optimizer2"):
         opt = tf.train.AdamOptimizer(learning_rate=1e-3)
         a.sess.run(tf.initialize_all_variables())
-        a.train(opt, trajs, 1000, 100)
+        a.train(opt, trajs, 10, 10)
 
     weights = variables.get_weights()
 
 
-env, policy = train(2, model=weights, k=2)
-
+env, policy = train(2, model=weights, k=2, policy=policy)
 
 #print(env.step(1))
 

@@ -50,10 +50,10 @@ class AugmentedEnv(gym.Env):
         obs = self.obs
         proc_obs = self._process_frame42(obs)
         done = self.done
-        term = 0 
+        term = False
         reward = 0
 
-        while (not done) and (np.random.rand(1) > term):  
+        while (not done) and not term:  
             l = [ self.model.evalpi(action-N, [(proc_obs, actions[j,:])])[0]  for j in range(N)]
             self.obs, rewardl, self.done, info = self._step(np.random.choice(np.arange(0,N),p=l/np.sum(l)))
 
@@ -61,7 +61,7 @@ class AugmentedEnv(gym.Env):
 
             obs = self.obs
             done = self.done
-            term = np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])),0.05)
+            term = (np.random.rand(1) > np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])), 0.25))
 
     return self.obs, reward, self.done, info
 

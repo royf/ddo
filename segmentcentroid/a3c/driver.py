@@ -57,10 +57,12 @@ class Runner(object):
         return gradient, info
 
 
-def train(num_workers, env_name="PongDeterministic-v3", max_steps=10000, model=None, k=0):
+def train(num_workers, env_name="PongDeterministic-v3", max_steps=1000, model=None, k=0, policy=None):
     env = create_env(env_name, model)
 
-    policy = LSTMPolicy(env.observation_space.shape, env.action_space.n+k, 0)
+    if policy == None:
+        policy = LSTMPolicy(env.observation_space.shape, env.action_space.n+k, 0)
+
     agents = [Runner(env_name, i, model=model, k=k) for i in range(num_workers)]
     parameters = policy.get_weights()
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]
@@ -74,7 +76,7 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=10000, model=N
         steps += 1
         obs += info["size"]
         gradient_list.extend([agents[info["id"]].compute_gradient(parameters)])
-    return env, policy
+    return env.env, policy
 
 
 def collect_demonstrations(env, policy, N=10, k=0.2):
