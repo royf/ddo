@@ -70,6 +70,7 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=N
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]
     steps = 0
     obs = 0
+    
     while steps < max_steps:
         done_id, gradient_list = ray.wait(gradient_list)
         gradient, info = ray.get(done_id)[0]
@@ -78,6 +79,7 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=N
         steps += 1
         obs += info["size"]
         gradient_list.extend([agents[info["id"]].compute_gradient(parameters)])
+
     return env.env, policy
 
 

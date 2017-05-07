@@ -6,42 +6,49 @@ from segmentcentroid.inference.forwardbackward import ForwardBackward
 import tensorflow as tf
 
 import ray
+import gym
 
 ray.init()
 
-with tf.Graph().as_default():
-    a = AtariVisionModel(2)
+def runDDO(env_name="PongDeterministic-v3",
+           num_options=2, 
+           ddo_learning_rate=1e-3,
+           steps_per_discovery=10,
+           rounds=5,
+           num_demonstrations_per=10,
+           ddo_max_iters=10,
+           ddo_vq_iters=10,
+           num_workers=2):
 
-    variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
+    g = tf.Graph()
 
-    #env, policy = train(2)
-    #trajs = collect_demonstrations(env, policy)
+    #initialize graph
+    with g.as_default():
+        a = AtariVisionModel(num_options, actiondim=(gym.make(env_name).action_space.n,1))
+        variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
 
-    with tf.variable_scope("optimizer2"):
-        opt = tf.train.AdamOptimizer(learning_rate=1e-3)
-        a.sess.run(tf.initialize_all_variables())
-        #a.train(opt, trajs, 1000, 100)
+        with tf.variable_scope("optimizer2"):
+            opt = tf.train.AdamOptimizer(learning_rate=ddo_learning_rate)
+            a.sess.run(tf.initialize_all_variables())
 
-    weights = variables.get_weights()
-
-env, policy = train(12, model=weights, k=2, max_steps=10000)
-trajs = collect_demonstrations(env, policy)
-
-
-with tf.Graph().as_default():
-    a = AtariVisionModel(2)
-
-    variables = ray.experimental.TensorFlowVariables(a.loss, a.sess)
-
-    with tf.variable_scope("optimizer2"):
-        opt = tf.train.AdamOptimizer(learning_rate=1e-3)
-        a.sess.run(tf.initialize_all_variables())
-        a.train(opt, trajs, 1000, 10)
-
-    weights = variables.get_weights()
+        weights = variables.get_weights()
 
 
-env, policy = train(12, model=weights, k=2, policy=policy, max_steps=50000)
+    for i in range(rounds):
+        env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
+        trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
 
-#print(env.step(1))
+        with g.as_default():
 
+            with tf.variable_scope("optimizer2"):
+
+                vq = ddo_vq_iters
+                if i > 0:
+                    vq = 0
+
+                a.train(opt, trajs, ddo_max_iters, vq)
+
+            weights = variables.get_weights()
+
+
+runDDO()
