@@ -268,7 +268,7 @@ def conv2a3c(sdim, adim, _hiddenLayer=32):
 
     y = tf.nn.softmax(logit)
 
-    logprob = tf.nn.softmax_cross_entropy_with_logits(logit, a)
+    logprob = tf.nn.softmax_cross_entropy_with_logits(logits=logit, labels=a)
 
     wlogprob = tf.multiply(tf.transpose(weight), logprob)
         
