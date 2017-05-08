@@ -13,12 +13,12 @@ ray.init()
 def runDDO(env_name="PongDeterministic-v3",
            num_options=2, 
            ddo_learning_rate=1e-3,
-           steps_per_discovery=10,
-           rounds=5,
-           num_demonstrations_per=10,
-           ddo_max_iters=10,
-           ddo_vq_iters=10,
-           num_workers=2):
+           steps_per_discovery=30000,
+           rounds=2,
+           num_demonstrations_per=100,
+           ddo_max_iters=100,
+           ddo_vq_iters=100,
+           num_workers=12):
 
     g = tf.Graph()
 

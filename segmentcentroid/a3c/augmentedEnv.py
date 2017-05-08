@@ -55,13 +55,14 @@ class AugmentedEnv(gym.Env):
 
         while (not done) and not term:  
             l = [ self.model.evalpi(action-N, [(proc_obs, actions[j,:])])[0]  for j in range(N)]
-            self.obs, rewardl, self.done, info = self._step(np.random.choice(np.arange(0,N),p=l/np.sum(l)))
+            #self.obs, rewardl, self.done, info = self._step(np.random.choice(np.arange(0,N),p=l/np.sum(l)))
+            self.obs, rewardl, self.done, info = self._step(np.argmax(l))
 
             reward = reward + rewardl
 
             obs = self.obs
             done = self.done
-            term = (np.random.rand(1) > np.minimum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])), 0.1))
+            term = (np.random.rand(1) > np.maximum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])), 0.25))
 
     return self.obs, reward, self.done, info
 
