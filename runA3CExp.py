@@ -33,8 +33,7 @@ def runDDO(env_name="PongDeterministic-v3",
 
     #run once to initialize
     env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=100)
-    trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
-
+    trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
 
 
     for i in range(rounds):

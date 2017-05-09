@@ -70,7 +70,7 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=N
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]
     steps = 0
     obs = 0
-    
+
     while steps < max_steps:
         done_id, gradient_list = ray.wait(gradient_list)
         gradient, info = ray.get(done_id)[0]
@@ -83,11 +83,16 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=N
     return env.env, policy
 
 
-def collect_demonstrations(env, policy, N=100, k=0.2):
+def collect_demonstrations(env, policy, N=100, k=0.2, epLengthProxy=False):
     trajs = []
     for i in range(0,N):
         rollout_obj = env_sampler(env, policy, 20)
-        total_r = np.squeeze(np.sum(rollout_obj.rewards))
+
+        if epLengthProxy:
+            total_r = len(rollout_obj.states)
+        else:
+            total_r = np.squeeze(np.sum(rollout_obj.rewards))
+            
         trajs.append((total_r, list(zip(rollout_obj.states, rollout_obj.actions))))
 
     #print(trajs)
