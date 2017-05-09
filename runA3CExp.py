@@ -31,12 +31,13 @@ def runDDO(env_name="PongDeterministic-v3",
             opt = tf.train.AdamOptimizer(learning_rate=ddo_learning_rate)
             a.sess.run(tf.initialize_all_variables())
 
-        weights = variables.get_weights()
+    #run once to initialize
+    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=100)
+    trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
+
 
 
     for i in range(rounds):
-        env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
-        trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
 
         with g.as_default():
 
@@ -49,6 +50,10 @@ def runDDO(env_name="PongDeterministic-v3",
                 a.train(opt, trajs, ddo_max_iters, vq)
 
             weights = variables.get_weights()
+
+
+        env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
+        trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
 
 
 runDDO()
