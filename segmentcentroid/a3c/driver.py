@@ -89,12 +89,12 @@ def collect_demonstrations(env, policy, N=100, k=0.2, epLengthProxy=False):
         rollout_obj = env_sampler(env, policy, 20)
 
         if epLengthProxy:
-            total_r = len(rollout_obj.states)
-            print(total_r)
+            data = np.array([r.reshape(-1, 1) for r in rollout_obj.states])
+            total_r = np.sum(np.std(data))
         else:
             total_r = np.squeeze(np.sum(rollout_obj.rewards))
 
-        trajs.append((total_r, list(zip(rollout_obj.states, rollout_obj.actions))))
+        trajs.append((-total_r, list(zip(rollout_obj.states, rollout_obj.actions))))
 
     #print(trajs)
     #trajs.sort(reverse=True)

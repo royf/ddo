@@ -51,8 +51,12 @@ class AugmentedEnv(gym.Env):
     if action < N:
         self.obs, reward, self.done, info = self.env._step(action)
     else:
-        obs = self.obs
-        proc_obs = self._process_frame42(obs)
+        #obs = cv2.Canny(self.obs,100,200)
+        #from matplotlib import pyplot as plt
+        #plt.imshow(self.obs,cmap = 'gray')
+        #plt.show()
+        proc_obs = self._process_frame42(self.obs)
+
         done = self.done
         term = False
         reward = 0

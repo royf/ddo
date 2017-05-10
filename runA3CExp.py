@@ -10,7 +10,7 @@ import gym
 
 ray.init()
 
-def runDDO(env_name="MontezumaRevenge-v0",
+def runDDO(env_name="PongDeterministic-v3",
            num_options=2, 
            ddo_learning_rate=1e-3,
            steps_per_discovery=60000,
@@ -37,6 +37,7 @@ def runDDO(env_name="MontezumaRevenge-v0",
     env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=100)
     trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
 
+    exit()
 
     for i in range(rounds):
 
