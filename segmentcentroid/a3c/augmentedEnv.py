@@ -10,18 +10,22 @@ import tensorflow as tf
 class AugmentedEnv(gym.Env):
   metadata = {'render.modes': ['human']}
 
+  
+
   def __init__(self, gymEnvName, model_weights, k):
+
+    self.env = gym.make(gymEnvName)
 
     g = tf.Graph()
     with g.as_default():
-        model = AtariVisionModel(k)
+        model = AtariVisionModel(k,actiondim=(self.env.action_space.n,1))
         model.sess.run(tf.initialize_all_variables())
         variables = ray.experimental.TensorFlowVariables(model.loss, model.sess)
 
         variables.set_weights(model_weights)
 
     self.model = model
-    self.env = gym.make(gymEnvName)
+
     self.action_space = spaces.Discrete(self.env.action_space.n + model.k) 
     self.obs = None
     self.done = False

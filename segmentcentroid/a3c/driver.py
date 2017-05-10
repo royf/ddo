@@ -90,9 +90,10 @@ def collect_demonstrations(env, policy, N=100, k=0.2, epLengthProxy=False):
 
         if epLengthProxy:
             total_r = len(rollout_obj.states)
+            print(total_r)
         else:
             total_r = np.squeeze(np.sum(rollout_obj.rewards))
-            
+
         trajs.append((total_r, list(zip(rollout_obj.states, rollout_obj.actions))))
 
     #print(trajs)
