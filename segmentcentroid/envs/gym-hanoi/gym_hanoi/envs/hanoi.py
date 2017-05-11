@@ -42,8 +42,10 @@ class Hanoi(gym.Env):
 
 
 class Hanoi5Discs(Hanoi):
-    super().__init__(5)
+    def __init__(self):
+        super().__init__(self, 5)
 
 
 class Hanoi10Discs(Hanoi):
-    super().__init__(10)
+    def __init__(self):
+        super().__init__(self, 10)
