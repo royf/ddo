@@ -112,6 +112,7 @@ the policy, and as long as the rollout exceeds a certain length, the thread
 runner appends the policy to the queue.
 """
     last_state = env.reset()
+    init_state = last_state
     last_features = policy.get_initial_features()
     length = 0
     rewards = 0
@@ -126,11 +127,13 @@ runner appends the policy to the queue.
             action, value_, features = fetched[0], fetched[1], fetched[2:]
             # argmax to convert from one-hot
             state, reward, terminal, info = env.step(action.argmax())
+            
             if render:
                 env.render()
 
             # collect the experience
-            rollout.add(last_state, action, reward, value_, terminal, last_features)
+            intrins = np.std(np.nonzero(np.abs(state.reshape((-1,1)) - init_state.reshape((-1,1))) > 0))/state.reshape((-1,1)).shape[0]
+            rollout.add(last_state, action, reward + intrins, value_ + intrins, terminal, last_features)
             length += 1
             rewards += reward
 

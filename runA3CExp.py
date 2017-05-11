@@ -10,7 +10,7 @@ import gym
 
 ray.init()
 
-def runDDO(env_name="PongDeterministic-v3",
+def runDDO(env_name="MontezumaRevenge-v0",
            num_options=2, 
            ddo_learning_rate=1e-3,
            steps_per_discovery=60000,
@@ -18,7 +18,7 @@ def runDDO(env_name="PongDeterministic-v3",
            num_demonstrations_per=100,
            ddo_max_iters=100,
            ddo_vq_iters=100,
-           num_workers=2):
+           num_workers=1):
 
     g = tf.Graph()
 
@@ -34,7 +34,7 @@ def runDDO(env_name="PongDeterministic-v3",
         weights = variables.get_weights()
 
     #run once to initialize
-    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=100)
+    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=1000)
     trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
 
     exit()
