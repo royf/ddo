@@ -9,10 +9,9 @@ import tensorflow as tf
 
 class AugmentedEnv(gym.Env):
   metadata = {'render.modes': ['human']}
-
   
 
-  def __init__(self, gymEnvName, model_weights, k):
+  def __init__(self, gymEnvName, model_weights, k, intrinsic=True):
 
     self.env = gym.make(gymEnvName)
 
@@ -25,6 +24,8 @@ class AugmentedEnv(gym.Env):
         variables.set_weights(model_weights)
 
     self.model = model
+    self.trajectory_set = set()
+    self.intrinsic = intrinsic
 
     self.action_space = spaces.Discrete(self.env.action_space.n + model.k) 
     self.obs = None
@@ -44,12 +45,41 @@ class AugmentedEnv(gym.Env):
     frame = np.reshape(frame, [42, 42, 1])
     return frame
 
+
+  def _process_frameTuple(self, frame, discretization=32.0, rep=16):
+    frame = frame[34:(34+160), :160]
+    # Resize by half, then down to 42x42 (essentially mipmapping). If
+    # we resize directly we lose pixels that, when mapped to 42x42,
+    # aren't close enough to the pixel boundary.
+    frame = cv2.resize(frame, (80, 80))
+    frame = cv2.resize(frame, (40, 40))
+    frame = cv2.resize(frame, (20, 20))
+    frame = cv2.resize(frame, (rep, rep))
+    frame = frame.mean(2)
+    frame = frame.astype(np.float32)
+    frame = np.round(frame / discretization)
+    frame = np.reshape(frame, (rep*rep,)).tolist()
+    return tuple(frame)
+
   def _step(self, action):
     N = self.env.action_space.n
     actions = np.eye(N)
     
     if action < N:
+    
         self.obs, reward, self.done, info = self.env._step(action)
+
+        if self.intrinsic:
+
+            tup = self._process_frameTuple(self.obs)
+            
+            if tup in self.trajectory_set:
+                reward = 0
+            else:
+                reward = 1
+
+            self.trajectory_set.add(tup)
+
     else:
         #obs = cv2.Canny(self.obs,100,200)
         #from matplotlib import pyplot as plt

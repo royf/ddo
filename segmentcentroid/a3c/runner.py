@@ -132,8 +132,8 @@ runner appends the policy to the queue.
                 env.render()
 
             # collect the experience
-            intrins = np.std(np.nonzero(np.abs(state.reshape((-1,1)) - init_state.reshape((-1,1))) > 0))/state.reshape((-1,1)).shape[0]
-            rollout.add(last_state, action, reward + intrins, value_ + intrins, terminal, last_features)
+            #intrins = np.std(np.nonzero(np.abs(state.reshape((-1,1)) - init_state.reshape((-1,1))) > 0))/state.reshape((-1,1)).shape[0]
+            rollout.add(last_state, action, reward, value_, terminal, last_features)
             length += 1
             rewards += reward
 
