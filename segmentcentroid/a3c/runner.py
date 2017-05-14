@@ -183,7 +183,12 @@ runner appends the policy to the queue.
 
     while not (terminal_end or terminal):
         fetched = policy.act(last_state, *last_features)
-        action, value_, features = fetched[0][0:env.action_space.n], fetched[1], fetched[2:]
+
+        try:
+            action, value_, features = fetched[0][0:env.env.action_space.n], fetched[1], fetched[2:]
+        except:
+            action, value_, features = fetched[0][0:env.action_space.n], fetched[1], fetched[2:]
+
             # argmax to convert from one-hot
         state, reward, terminal, info = env.step(action.argmax())
 
