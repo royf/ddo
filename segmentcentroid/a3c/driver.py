@@ -80,7 +80,7 @@ def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=N
         obs += info["size"]
         gradient_list.extend([agents[info["id"]].compute_gradient(parameters)])
 
-    return env.env, policy
+    return env, policy
 
 
 def collect_demonstrations(env, policy, N=100, k=0.2, epLengthProxy=False):
