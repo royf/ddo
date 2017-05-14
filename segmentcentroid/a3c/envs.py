@@ -18,12 +18,13 @@ logger.setLevel(logging.INFO)
 def create_env(env_id, model=None, k=None, intrinsic=False):
 
     if model != None and k != None:
-        env = AugmentedEnv(env_id, model, k, intrinsic=intrinsic)
+        aenv = AugmentedEnv(env_id, model, k, intrinsic=intrinsic)
     else:
-        env = gym.make(env_id)
+        aenv = gym.make(env_id)
 
-    env = AtariProcessing(env)
+    env = AtariProcessing(aenv)
     env = Diagnostic(env)
+
     return env
 
 def _process_frame42(frame):

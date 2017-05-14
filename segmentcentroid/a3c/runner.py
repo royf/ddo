@@ -185,7 +185,8 @@ runner appends the policy to the queue.
         fetched = policy.act(last_state, *last_features)
 
         try:
-            action, value_, features = fetched[0][0:env.env.action_space.n], fetched[1], fetched[2:]
+            #print(env.env.env.real_action_space)
+            action, value_, features = fetched[0][0:env.env.env.real_action_space], fetched[1], fetched[2:]
         except:
             action, value_, features = fetched[0][0:env.action_space.n], fetched[1], fetched[2:]
 

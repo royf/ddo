@@ -27,6 +27,10 @@ class AugmentedEnv(gym.Env):
     self.trajectory_set = set()
     self.intrinsic = intrinsic
 
+    self.real_action_space = self.env.action_space.n
+    
+    #print(self.real_action_space)
+
     self.action_space = spaces.Discrete(self.env.action_space.n + model.k) 
     #print("####",self.env.action_space.n + model.k)
     self.obs = None
@@ -92,7 +96,7 @@ class AugmentedEnv(gym.Env):
         term = False
         reward = 0
 
-        while (not done) and not term:  
+        while (not done):  
             l = [ self.model.evalpi(action-N, [(proc_obs, actions[j,:])])[0]  for j in range(N)]
             #self.obs, rewardl, self.done, info = self._step(np.random.choice(np.arange(0,N),p=l/np.sum(l)))
             self.obs, rewardl, self.done, info = self._step(np.argmax(l))
@@ -101,7 +105,12 @@ class AugmentedEnv(gym.Env):
 
             obs = self.obs
             done = self.done
-            term = (np.random.rand(1) > np.maximum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])), 0.25))
+
+            if (np.random.rand(1) > np.maximum(np.ravel(self.model.evalpsi(int(action-N), [(proc_obs, actions[1,:])])), 0.1)):
+                #print("break")
+                break
+
+            #print(term)
 
     return self.obs, reward, self.done, info
 
