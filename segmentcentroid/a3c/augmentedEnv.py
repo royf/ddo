@@ -11,7 +11,7 @@ class AugmentedEnv(gym.Env):
   metadata = {'render.modes': ['human']}
   
 
-  def __init__(self, gymEnvName, model_weights, k, intrinsic=True):
+  def __init__(self, gymEnvName, model_weights, k, intrinsic=False):
 
     self.env = gym.make(gymEnvName)
 

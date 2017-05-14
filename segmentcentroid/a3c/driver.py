@@ -57,8 +57,8 @@ class Runner(object):
         return gradient, info
 
 
-def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=None, k=0, policy=None):
-    env = create_env(env_name, model)
+def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=None, k=0, policy=None, intrinsic=False):
+    env = create_env(env_name, model, intrinsic=False)
 
     logdir = 'results1/'
     if policy == None:

@@ -34,7 +34,7 @@ def runDDO(env_name="MontezumaRevenge-v0",
         weights = variables.get_weights()
 
     #run once to initialize
-    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=10000)
+    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=10000, intrinsic=True)
     trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
 
     exit()

@@ -15,10 +15,10 @@ from segmentcentroid.a3c.augmentedEnv import AugmentedEnv
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-def create_env(env_id, model=None, k=None):
+def create_env(env_id, model=None, k=None, intrinsic=False):
 
     if model != None and k != None:
-        env = AugmentedEnv(env_id,model, k)
+        env = AugmentedEnv(env_id,model, k, intrinsic)
     else:
         env = gym.make(env_id)
 
