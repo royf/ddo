@@ -58,7 +58,7 @@ class Runner(object):
 
 
 def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=None, k=0, policy=None, intrinsic=False):
-    env = create_env(env_name, model, intrinsic=False)
+    env = create_env(env_name, model, intrinsic)
 
     logdir = 'results1/'
     if policy == None:

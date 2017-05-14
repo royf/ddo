@@ -13,7 +13,7 @@ ray.init()
 def runDDO(env_name="MontezumaRevenge-v0",
            num_options=2, 
            ddo_learning_rate=1e-3,
-           steps_per_discovery=60000,
+           steps_per_discovery=10000,
            rounds=1,
            num_demonstrations_per=100,
            ddo_max_iters=100,
@@ -36,8 +36,6 @@ def runDDO(env_name="MontezumaRevenge-v0",
     #run once to initialize
     env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=10000, intrinsic=True)
     trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
-
-    exit()
 
     for i in range(rounds):
 
