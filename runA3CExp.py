@@ -16,7 +16,7 @@ def runDDOI(env_name="PongDeterministic-v3",
            inital_steps=10,
            steps_per_discovery=10000,
            rounds=1,
-           num_demonstrations_per=10,
+           num_demonstrations_per=100,
            ddo_max_iters=100,
            ddo_vq_iters=100,
            num_workers=1):
@@ -64,7 +64,7 @@ def runDDO(env_name="PongDeterministic-v3",
            ddo_learning_rate=1e-3,
            steps_per_discovery=10000,
            rounds=1,
-           num_demonstrations_per=10,
+           num_demonstrations_per=100,
            ddo_max_iters=100,
            ddo_vq_iters=100,
            num_workers=1):
@@ -109,7 +109,7 @@ def runDDO(env_name="PongDeterministic-v3",
 
 def runA3C(env_name="PongDeterministic-v3",
            steps=1000,
-           num_demonstrations_per=10,
+           num_demonstrations_per=100,
            num_workers=1):
 
     #run once to initialize
@@ -122,15 +122,27 @@ def runA3C(env_name="PongDeterministic-v3",
 
 def runAll(num_steps, envs, num_workers, outputfile='out.p'):
     import pickle
-    f=open(outputfile, 'wb')
+    f = open(outputfile, 'wb')
+
+    output = []
 
     for e in envs:
         print("Running", e)
-        #int(num_steps/9999)
-        pickle.dump((runA3C(env_name=e, steps=num_steps, num_workers=num_workers),
-                     runDDO(env_name=e, steps_per_discovery=num_steps, rounds=1, num_workers=num_workers),
-                     runDDOI(env_name=e, steps_per_discovery=num_steps, rounds=1, num_workers=num_workers )),f)
+
+        if num_steps >= 10000:
+            rounds = int(num_steps/9999)
+        else:
+            rounds = 1
+        
+        data = (runA3C(env_name=e, steps=num_steps, num_workers=num_workers),
+                     runDDO(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers),
+                     runDDOI(env_name=e, steps_per_discovery=num_steps, rounds=rounds, num_workers=num_workers))
+
+        print("###Data", data)
+        output.append(data)
+
+    pickle.dump(output, f)
 
 
-runAll(10, ['PongDeterministic-v3', 'Breakout-v0'], 1)
+runAll(100000, ['PongDeterministic-v3'], 1)
 
