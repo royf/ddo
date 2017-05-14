@@ -99,7 +99,7 @@ def collect_demonstrations(env, policy, N=100, k=0.2, epLengthProxy=False):
     #trajs.sort(reverse=True)
     trajs = sorted(trajs, key=lambda x: x[0])
 
-    return [t[1] for t in trajs[:int(k*N)]]
+    return [t[1] for t in trajs[:int(k*N)]], np.mean([t[0] for t in trajs])
 
 
 """

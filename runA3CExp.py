@@ -9,16 +9,17 @@ import ray
 import gym
 
 ray.init()
-
-def runDDO(env_name="MontezumaRevenge-v0",
+#MontezumaRevenge-v0
+def runDDO(env_name="PongDeterministic-v3",
            num_options=2, 
            ddo_learning_rate=1e-3,
+           inital_steps=1000,
            steps_per_discovery=10000,
            rounds=1,
-           num_demonstrations_per=100,
+           num_demonstrations_per=10,
            ddo_max_iters=100,
            ddo_vq_iters=100,
-           num_workers=12):
+           num_workers=1):
 
     g = tf.Graph()
 
@@ -34,8 +35,8 @@ def runDDO(env_name="MontezumaRevenge-v0",
         weights = variables.get_weights()
 
     #run once to initialize
-    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=10000, intrinsic=True)
-    trajs = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
+    env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=inital_steps, intrinsic=True)
+    trajs,_ = collect_demonstrations(env, policy, N=num_demonstrations_per, epLengthProxy=True)
 
     for i in range(rounds):
 
@@ -53,7 +54,9 @@ def runDDO(env_name="MontezumaRevenge-v0",
 
 
         env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
-        trajs = collect_demonstrations(env, policy, N=num_demonstrations_per)
+        trajs, reward = collect_demonstrations(env, policy, N=num_demonstrations_per)
+
+    return {'reward': reward, 'env': env_name, 'num_options': num_options}
 
 
-runDDO()
+print(runDDO())
