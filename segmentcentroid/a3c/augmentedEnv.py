@@ -28,6 +28,7 @@ class AugmentedEnv(gym.Env):
     self.intrinsic = intrinsic
 
     self.action_space = spaces.Discrete(self.env.action_space.n + model.k) 
+    #print("####",self.env.action_space.n + model.k)
     self.obs = None
     self.done = False
     self.spec = self.env.spec

@@ -21,8 +21,8 @@ from .envs import create_env
 class Runner(object):
     """Actor object to start running simulation on workers.
         Gradient computation is also executed from this object."""
-    def __init__(self, env_name, actor_id, logdir="results/", start=True, model=None, k=None):
-        env = create_env(env_name, model, k)
+    def __init__(self, env_name, actor_id, logdir="results/", start=True, model=None, k=None, intrinsic=False):
+        env = create_env(env_name, model, k, intrinsic=intrinsic)
         self.id = actor_id
         num_actions = env.action_space.n
         self.policy = LSTMPolicy(env.observation_space.shape, num_actions, actor_id)
@@ -58,14 +58,14 @@ class Runner(object):
 
 
 def train(num_workers, env_name="PongDeterministic-v3", max_steps=30000, model=None, k=0, policy=None, intrinsic=False):
-    env = create_env(env_name, model,k, intrinsic=intrinsic)
+    env = create_env(env_name, model, k, intrinsic=intrinsic)
 
     logdir = 'results1/'
     if policy == None:
-        policy = LSTMPolicy(env.observation_space.shape, env.action_space.n+k, 0)
+        policy = LSTMPolicy(env.observation_space.shape, env.action_space.n, 0)
         logdir = 'results/'
 
-    agents = [Runner(env_name, i, model=model, k=k, logdir=logdir) for i in range(num_workers)]
+    agents = [Runner(env_name, i, model=model, k=k, logdir=logdir, intrinsic=intrinsic) for i in range(num_workers)]
     parameters = policy.get_weights()
     gradient_list = [agent.compute_gradient(parameters) for agent in agents]
     steps = 0
