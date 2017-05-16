@@ -53,7 +53,7 @@ def runDDOI(env_name="PongDeterministic-v3",
             weights = variables.get_weights()
 
 
-        env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
+        env, policy = train(num_workers, policy=policy, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
         trajs, reward = collect_demonstrations(env, policy, N=num_demonstrations_per)
 
     return {'reward': reward, 'env': env_name, 'num_options': num_options, 'ddo': True, 'intrinsic': True}
@@ -101,7 +101,7 @@ def runDDO(env_name="PongDeterministic-v3",
             weights = variables.get_weights()
 
 
-        env, policy = train(num_workers, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
+        env, policy = train(num_workers, policy=policy, env_name=env_name, model=weights, k=num_options, max_steps=steps_per_discovery)
         trajs, reward = collect_demonstrations(env, policy, N=num_demonstrations_per)
 
     return {'reward': reward, 'env': env_name, 'num_options': num_options, 'ddo': True, 'intrinsic': False}
@@ -129,7 +129,7 @@ def runAll(num_steps, envs, num_workers, outputfile='out.p'):
     for e in envs:
         print("Running", e)
 
-        if num_steps >= 10000:
+        if num_steps >= 5000:
             rounds = int(num_steps/9999)
         else:
             rounds = 1
@@ -144,5 +144,5 @@ def runAll(num_steps, envs, num_workers, outputfile='out.p'):
     pickle.dump(output, f)
 
 
-runAll(100000, ['PongDeterministic-v3'], 1)
+runAll(600000, ['PongDeterministic-v3'], 1)
 
