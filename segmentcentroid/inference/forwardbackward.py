@@ -136,8 +136,8 @@ class ForwardBackward(object):
 
         if tabulate:
             for h in range(0, self.k):
-                self.pi[:,h] = self.model.evalpi(h,X)
-                self.psi[:,h] = self.model.evalpsi(h,X)
+                self.pi[:,h] = np.clip(self.model.evalpi(h,X),1e-6,1)
+                self.psi[:,h] = np.clip(self.model.evalpsi(h,X),1e-6, 1)
 
                 #print("fb",self.pi, self.psi)
 
@@ -172,10 +172,6 @@ class ForwardBackward(object):
         for t in range(len(self.X)):
             update = self.termination(t)
             negUpdate = self.negTermination(t)
-
-            if np.sum(np.isnan(update)) >= self.k:
-                #print(self.termination(t))
-                raise ValueError("Error!!")
 
             Bunorm[t, :] = update
             negBunorm[t,:] = negUpdate

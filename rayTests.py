@@ -8,15 +8,17 @@ import numpy as np
 import ray
 import tensorflow as tf
 
-ray.init(num_workers=4)
+ray.init(num_workers=1)
 
-MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
-gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
-demonstrations = 10
-dataset = []
 
-for i in range(0,demonstrations):
-    print("Traj",i)
+###ray starts here
+
+@ray.remote
+def planner():
+    print("-----Planning Demonstration-----")
+    MAP_NAME = 'resources/GridWorldMaps/experiment1.txt'
+    gmap = np.loadtxt(MAP_NAME, dtype=np.uint8)
+
     g = GridWorldEnv(copy.copy(gmap), noise=0.1)
     g.generateRandomStartGoal()
     v = ValueIterationPlanner(g)
@@ -29,10 +31,8 @@ for i in range(0,demonstrations):
         s[0:2,0] =  t[0]
         new_traj.append((s,a))
 
-    dataset.append(new_traj)
+    return new_traj
 
-
-###ray starts here
 
 def gridWorldInit():
 
@@ -43,31 +43,20 @@ def gridWorldInit():
         
         m.sess.run(tf.initialize_all_variables())
 
-        #with tf.variable_scope("optimizer"):
-            #opt = tf.train.AdamOptimizer(learning_rate=0.001)
-
-            #loss, train, init, pivars, psivars, lossa = m.getOptimizationVariables(opt)
-
         variables = ray.experimental.TensorFlowVariables(m.loss, m.sess)
-    
-    #with tf.Graph().as_default():
-    #    pass
-
-    """
-    with t.as_default():
-        with tf.variable_scope("optimizer"):
-            m.train(opt, dataset, 1, 1)
-    """
 
     return m, m.opt, t, variables
+
 
 def gridWorldReinit(m):
     return m
 
+
 ray.env.gridworld = ray.EnvironmentVariable(gridWorldInit, gridWorldReinit)
 
+
 @ray.remote
-def ptrain(weights):
+def ptrain(weights, dataset):
     m, opt, t, variables = ray.env.gridworld
 
     variables.set_weights(weights)
@@ -78,6 +67,10 @@ def ptrain(weights):
     
     return None
 
+
+
+demonstrations = 100
+dataset = ray.get([planner.remote() for i in range(demonstrations)])
 
 
 m = GridWorldModel(2, statedim=(2,1))
@@ -103,7 +96,7 @@ with tf.variable_scope("optimizer"):
 
     variables = ray.experimental.TensorFlowVariables(m.loss, m.sess)
 
-    for iter in range(0,10):
+    for iter in range(0,1000):
 
         print("----Iteration---", iter)
 
@@ -111,7 +104,7 @@ with tf.variable_scope("optimizer"):
 
 
 
-        list_of_gradients = ray.get([ptrain.remote(weights) for i in range(0,2)])
+        list_of_gradients = ray.get([ptrain.remote(weights, dataset) for i in range(0,1)])
 
 
 
